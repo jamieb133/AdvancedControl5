@@ -10,7 +10,7 @@ clc;
 % Setup Simulation
 Vl = -6;
 Vr = 6;
-sim_time = 5;
+sim_time = 30;
 dT = 0.05;
 xi = zeros(1,24); % intial state for x
 LeftS = 0;
@@ -45,20 +45,94 @@ end
 %----------------------------------------------%
 
 %----------------------------------------------%
-fuzzyController = readfis('FuzzyController.fis');
+HeadingController = readfis('HeadingsToTurnCmd.fis');
+MotorController = readfis('TurnCommand.fis');
+
+targetX = -2
+targetY = -1
+targetWaypoint = [targetX, targetY];
+simpleGain = 10/pi;
+Vd = 0.5; %drive voltage
+motorGain = 3;
+Kd = 0.0;
+Kp = 10/pi;
+Ki = 10/pi;
+K = [Kp, Ki, Kd];
+
+prevError = 0;
+
 for outer_loop = 1:(sim_time/dT)
 
     %----------------------------------------------%
     % Run Model
 
     sensorOut = ObsSensor1(xi(19), xi(20), [0.2 0], xi(24), Obs_Matrix);
-    
-    %outPower = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
-    %Vl = outPower(:,1);
-    %Vr = outPower(:,2);
-    disp([sensorOut(:,1), sensorOut(:,2)])
-    [Vl, Vr] = NeuralController(sensorOut(:,1), sensorOut(:,2));
+    [atWaypoint, refAngle] = los_auto(xi(19), xi(20), targetWaypoint);
 
+    %calculate current radius from target waypoint
+    deltaX = xi(19) - targetX;
+    deltaY = xi(20) - targetY;
+    radius = sqrt(deltaX^2 + deltaY^2)
+    
+    if radius < 1
+        Vd = 0;
+    end;
+
+    headingAngle = xi(24)
+
+    %disp([xi(19), xi(20), xi(24), refAngle])
+
+    angleError = CalcAngleError(headingAngle, refAngle)
+    angleError = refAngle - headingAngle
+
+    if atWaypoint
+        Vl = 0
+        Vr = 0
+    else
+        %fuzzy object avoidance control
+        %fuzzyOut = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
+
+        %fuzzy path controller (first controller selects turn command)
+        refAngle;
+
+        %determine turn command based on ref and heading angle fuzzy input sets
+        turnCmd = evalfis([refAngle, headingAngle], HeadingController);
+        if turnCmd < 11.25
+            disp("FWD or Lsoft");
+        elseif turnCmd < 23.75
+            disp("Lsoft or Lhard");
+        elseif turnCmd < 36.2
+            disp("Lhard or Lrot");
+        elseif turnCmd < 48.75
+            disp("Lrot or Lrev");
+        elseif turnCmd < 61.25
+            disp("Lrev or Rrev");
+        elseif turnCmd < 73.75
+            disp("Rrev or Rrot");
+        elseif turnCmd < 86.25
+            disp("Rrot or Rhard");
+        else
+            disp("Rhard or Rsoft");
+        end;
+
+        fuzzyOut = evalfis(turnCmd, MotorController)
+
+        %apply individual voltages calculated from fuzzy controller
+        Vl = Vd + motorGain*fuzzyOut(:,1)
+        Vr = Vd + motorGain*fuzzyOut(:,2)
+
+        %Vl = -6;
+        %Vr = 6;
+
+    end;
+
+    prevError = angleError;
+
+
+
+
+
+    %apply calculated output voltages to motors
     Va = [Vl; Vl; Vr; Vr];
     [xdot, xi] = full_mdl_motors(Va,xi,0,0,0,0,dT);   
     xi = xi + (xdot*dT); % Euler intergration
