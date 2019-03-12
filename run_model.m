@@ -89,29 +89,11 @@ for outer_loop = 1:(sim_time/dT)
         %this controller provides object avoidance 
         %determines a desired turn command based
         %   solely on the proximity to an obstacle
-        %fuzzyOut = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
-
+        %avoidanceCmd = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
 
         %this controller determines a desired turn command 
         %   based solely on reference and heading angle fuzzy input sets
         headingCmd = evalfis([refAngle, headingAngle], HeadingController);
-        if turnCmd < 11.25
-            disp("FWD or Lsoft");
-        elseif turnCmd < 23.75
-            disp("Lsoft or Lhard");
-        elseif turnCmd < 36.2
-            disp("Lhard or Lrot");
-        elseif turnCmd < 48.75
-            disp("Lrot or Lrev");
-        elseif turnCmd < 61.25
-            disp("Lrev or Rrev");
-        elseif turnCmd < 73.75
-            disp("Rrev or Rrot");
-        elseif turnCmd < 86.25
-            disp("Rrot or Rhard");
-        else
-            disp("Rhard or Rsoft");
-        end;
 
         %this controller takes turn commands from the object avoider
         %   & heading controller to determine the output motor voltages
