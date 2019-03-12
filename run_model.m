@@ -48,12 +48,12 @@ end
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
 
-targetX = -2
-targetY = -1
+targetX = -3
+targetY = -3
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
-Vd = 0.5; %drive voltage
-motorGain = 3;
+Vd = 1; %drive voltage
+motorGain = 7;
 Kd = 0.0;
 Kp = 10/pi;
 Ki = 10/pi;
@@ -73,30 +73,28 @@ for outer_loop = 1:(sim_time/dT)
     deltaX = xi(19) - targetX;
     deltaY = xi(20) - targetY;
     radius = sqrt(deltaX^2 + deltaY^2)
-    
-    if radius < 1
-        Vd = 0;
-    end;
 
     headingAngle = xi(24)
+    refAngle
 
     %disp([xi(19), xi(20), xi(24), refAngle])
 
-    angleError = CalcAngleError(headingAngle, refAngle)
-    angleError = refAngle - headingAngle
+    angleError = CalcAngleError(headingAngle, refAngle);
+    angleError = refAngle - headingAngle;
 
     if atWaypoint
         Vl = 0
         Vr = 0
     else
-        %fuzzy object avoidance control
+        %this controller provides object avoidance 
+        %determines a desired turn command based
+        %   solely on the proximity to an obstacle
         %fuzzyOut = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
 
-        %fuzzy path controller (first controller selects turn command)
-        refAngle;
 
-        %determine turn command based on ref and heading angle fuzzy input sets
-        turnCmd = evalfis([refAngle, headingAngle], HeadingController);
+        %this controller determines a desired turn command 
+        %   based solely on reference and heading angle fuzzy input sets
+        headingCmd = evalfis([refAngle, headingAngle], HeadingController);
         if turnCmd < 11.25
             disp("FWD or Lsoft");
         elseif turnCmd < 23.75
@@ -115,12 +113,33 @@ for outer_loop = 1:(sim_time/dT)
             disp("Rhard or Rsoft");
         end;
 
-        fuzzyOut = evalfis(turnCmd, MotorController)
+        %this controller takes turn commands from the object avoider
+        %   & heading controller to determine the output motor voltages
+        fuzzyOut = evalfis([headingCmd, radius], MotorController)
 
         %apply individual voltages calculated from fuzzy controller
-        Vl = Vd + motorGain*fuzzyOut(:,1)
-        Vr = Vd + motorGain*fuzzyOut(:,2)
+        if radius > 1
+            Vl = Vd + (motorGain * fuzzyOut(:,1));
+            Vr = Vd + (motorGain * fuzzyOut(:,2));
+        else 
+            %when close to waypoint, reduce drive voltage proportionally
+            Vd * radius
+            Vl = (Vd * radius) + (motorGain * fuzzyOut(:,1) )
+            Vr = (Vd * radius) + (motorGain * fuzzyOut(:,2) )
+        end;
+        
+        %limit the outputs to max voltage range (+- 7.4V)
+        if Vl > 7.4
+            Vl = 7.4;
+        elseif Vl < -7.4
+            Vl = -7.4;
+        end;
 
+        if Vr > 7.4
+            Vr = 7.4;
+        elseif Vl < -7.4
+            Vl = -7.4;
+        end;
         %Vl = -6;
         %Vr = 6;
 

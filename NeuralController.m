@@ -26,15 +26,15 @@ function [LeftVoltage, RightVoltage] = NeuralController(LeftS, RightS)
     %----------------------------------------------%
     LeftNeuVal = (LeftS*w1) + (RightS*w3);  %calculate left neuron value before biasing
     if (LeftNeuVal > T1)                    %apply threshold bias
-        LeftVoltage = 10;
+        LeftVoltage = 0.75;
     else
-        LeftVoltage = 0;
+        LeftVoltage = -0.5;
     end
 
     RightNeuVal = (LeftS*w2) + (RightS*w4);  % calculate right neuron value before biasing
     if (RightNeuVal > T2)
-        RightVoltage = 10;
+        RightVoltage = 0.75;
     else
-        RightVoltage = 0;
+        RightVoltage = -0.5;
     end
     %----------------------------------------------%

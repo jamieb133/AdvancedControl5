@@ -1,7 +1,7 @@
 %
 % Function to calculate required heading
 %
-% Author: 
+% (provided from assignment brief)
 %
 % Created: 25/02/19
 %

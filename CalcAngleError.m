@@ -35,3 +35,5 @@ function angleError = CalcAngleError(headingAngle, refAngle)
     else
         angleError = headingAngleNew - refAngleNew;
     end;
+
+    
