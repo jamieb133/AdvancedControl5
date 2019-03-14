@@ -1,0 +1,57 @@
+[System]
+Name='ObjectAvoider'
+Type='mamdani'
+Version=2.0
+NumInputs=2
+NumOutputs=2
+NumRules=9
+AndMethod='min'
+OrMethod='max'
+ImpMethod='min'
+AggMethod='max'
+DefuzzMethod='centroid'
+
+[Input1]
+Name='distance_{left}'
+Range=[0 1]
+NumMFs=3
+MF1='CLOSE':'trapmf',[-0.45 -0.05 0.05 0.45]
+MF2='NEAR':'trapmf',[0.05 0.45 0.55 0.95]
+MF3='FAR':'trapmf',[0.55 0.95 1.05 1.45]
+
+[Input2]
+Name='distance_{right}'
+Range=[0 1]
+NumMFs=3
+MF1='CLOSE':'trapmf',[-0.45 -0.05 0.05 0.45]
+MF2='NEAR':'trapmf',[0.05 0.45 0.55 0.95]
+MF3='FAR':'trapmf',[0.55 0.95 1.05 1.45]
+
+[Output1]
+Name='wallSlope'
+Range=[0 100]
+NumMFs=5
+MF1='SC':'trapmf',[-22.5 -2.5 2.5 22.5]
+MF2='GC':'trapmf',[2.5 22.5 27.5 47.5]
+MF3='FL':'trapmf',[27.5 47.5 52.5 72.5]
+MF4='GD':'trapmf',[52.5 72.5 77.5 97.5]
+MF5='SD':'trapmf',[77.5 97.5 102.5 122.5]
+
+[Output2]
+Name='wallProximity'
+Range=[0 100]
+NumMFs=3
+MF1='CLOSE':'trapmf',[-45 -5 5 45]
+MF2='NEAR':'trapmf',[5 45 55 95]
+MF3='FAR':'trapmf',[55 95 105 145]
+
+[Rules]
+1 1, 3 1 (1) : 1
+1 2, 4 1 (1) : 1
+1 3, 5 1 (1) : 1
+2 1, 2 1 (1) : 1
+2 2, 3 2 (1) : 1
+2 3, 4 2 (1) : 1
+3 1, 1 1 (1) : 1
+3 2, 2 2 (1) : 1
+3 3, 3 3 (1) : 1

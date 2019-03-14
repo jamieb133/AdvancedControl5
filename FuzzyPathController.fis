@@ -1,0 +1,71 @@
+[System]
+Name='FuzzyPathController'
+Type='mamdani'
+Version=2.0
+NumInputs=2
+NumOutputs=2
+NumRules=9
+AndMethod='min'
+OrMethod='max'
+ImpMethod='min'
+AggMethod='max'
+DefuzzMethod='centroid'
+
+[Input1]
+Name='psi_{ref}'
+Range=[-3.14159265358979 3.14159265358979]
+NumMFs=9
+MF1='S_{neg}':'trimf',[-3.927 -3.142 -2.356]
+MF2='SW':'trimf',[-3.142 -2.356 -1.571]
+MF3='W':'trimf',[-2.356 -1.571 -0.7854]
+MF4='NW':'trimf',[-1.571 -0.7854 1.11e-16]
+MF5='N':'trimf',[-0.7854 6.939e-18 0.7854]
+MF6='NE':'trimf',[-1.11e-16 0.7854 1.571]
+MF7='E':'trimf',[0.7854 1.571 2.356]
+MF8='SE':'trimf',[1.571 2.356 3.142]
+MF9='S_{pos}':'trimf',[2.356 3.142 3.927]
+
+[Input2]
+Name='psi'
+Range=[-3.14159265358979 3.14159265358979]
+NumMFs=9
+MF1='S_{neg}':'trimf',[-3.927 -3.142 -2.356]
+MF2='SW':'trimf',[-3.142 -2.356 -1.571]
+MF3='W':'trimf',[-2.356 -1.571 -0.7854]
+MF4='NW':'trimf',[-1.571 -0.7854 1.11e-16]
+MF5='N':'trimf',[-0.7854 6.939e-18 0.7854]
+MF6='NE':'trimf',[-1.11e-16 0.7854 1.571]
+MF7='E':'trimf',[0.7854 1.571 2.356]
+MF8='SE':'trimf',[1.571 2.356 3.142]
+MF9='S_{pos}':'trimf',[2.356 3.142 3.927]
+
+[Output1]
+Name='GainL'
+Range=[-1 1]
+NumMFs=5
+MF1='REV_{high}':'trapmf',[-1.45 -1.05 -0.95 -0.55]
+MF2='REV_{low}':'trapmf',[-0.95 -0.55 -0.45 -0.05]
+MF3='OFF':'trapmf',[-0.45 -0.05 0.05 0.45]
+MF4='FWD_{low}':'trapmf',[0.05 0.45 0.55 0.95]
+MF5='FWD_{high}':'trapmf',[0.55 0.95 1.05 1.45]
+
+[Output2]
+Name='GainR'
+Range=[-1 1]
+NumMFs=5
+MF1='REV_{high}':'trapmf',[-1.45 -1.05 -0.95 -0.55]
+MF2='REV_{low}':'trapmf',[-0.95 -0.55 -0.45 -0.05]
+MF3='OFF':'trapmf',[-0.45 -0.05 0.05 0.45]
+MF4='FWD_{low}':'trapmf',[0.05 0.45 0.55 0.95]
+MF5='FWD_{high}':'trapmf',[0.55 0.95 1.05 1.45]
+
+[Rules]
+1 1, 5 5 (1) : 1
+1 2, 4 5 (1) : 1
+1 3, 3 5 (1) : 1
+1 4, 2 4 (1) : 1
+1 5, 2 4 (1) : 1
+1 6, 4 2 (1) : 1
+1 7, 5 3 (1) : 1
+1 8, 5 4 (1) : 1
+1 9, 5 5 (1) : 1

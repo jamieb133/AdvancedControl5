@@ -19,13 +19,16 @@ RightS = 0;
 
 %----------------------------------------------%
 % Create Environment
+
 max_x = 10;
 max_y = 10;
 
 Obs_Matrix = zeros(max_x/0.01,max_y/0.01);
 
-wall = WallGeneration1(-1, 1,1.2,1.2,'h');
-wall2 = WallGeneration1(-3, -3, -2, 2,'v');
+wall = WallGeneration(-1, 1,1.2,1.2,'h');
+wall2 = WallGeneration(-3, -3, -2, 2,'v');
+wall3 = WallGeneration(2, 2, -3, 1,'v');
+wall4 = WallGeneration(-3, -1, 4, 4,'h');
 
 for x=1:length(wall)
     
@@ -42,14 +45,48 @@ for x=1:length(wall2)
     
     Obs_Matrix(ypos,xpos) = 1;
 end
+
+for x=1:length(wall3)
+    
+    
+    xpos = int16( (wall3(x,1)/0.01)+((max_x/2)/0.01) );
+    ypos = int16( (wall3(x,2)/0.01)+((max_y/2)/0.01) );
+    %disp(Obs_Matrix(1, 1))
+    ypos
+    xpos
+    length(wall3)
+    Obs_Matrix(ypos,xpos) = 1;
+    
+
+    
+    %disp(Obs_Matrix(ypos, xpos))
+    if ( (isreal(x) && rem(x,1)==0) == false) || (x < 0)
+        return
+    end;
+    if xpos < 0
+        xpos;
+    elseif ypos< 0
+        xpos;
+    end;
+end
+
+for x=1:length(wall4)
+    
+    xpos = int16( (wall4(x,1)/0.01)+((max_x/2)/0.01) );
+    ypos = int16( (wall4(x,2)/0.01)+((max_y/2)/0.01) );
+    
+    Obs_Matrix(ypos,xpos) = 1;
+end
+
 %----------------------------------------------%
 
 %----------------------------------------------%
+ObjectAvoider = readfis('ObjectAvoider.fis');
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
 
-targetX = -3
-targetY = -3
+targetX = -1
+targetY = -1
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
 Vd = 1; %drive voltage
@@ -89,7 +126,7 @@ for outer_loop = 1:(sim_time/dT)
         %this controller provides object avoidance 
         %determines a desired turn command based
         %   solely on the proximity to an obstacle
-        %avoidanceCmd = evalfis([sensorOut(:,1) sensorOut(:,2)], fuzzyController);
+        [wallSlope, wallProx] = evalfis([sensorOut(:,1) sensorOut(:,2)], ObjectAvoider);
 
         %this controller determines a desired turn command 
         %   based solely on reference and heading angle fuzzy input sets
@@ -157,6 +194,9 @@ for outer_loop = 1:(sim_time/dT)
     xlabel('y, m'); ylabel('x, m');
     plot(wall(:,1),wall(:,2),'k-');
     plot(wall2(:,1),wall2(:,2),'k-');
+
+    plot(wall3(:,1),wall3(:,2),'k-');
+    plot(wall4(:,1),wall4(:,2),'k-');
     pause(0.001);
     %----------------------------------------------%
     
