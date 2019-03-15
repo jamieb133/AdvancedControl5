@@ -10,8 +10,9 @@ clc;
 % Setup Simulation
 Vl = -6;
 Vr = 6;
-sim_time = 30;
-dT = 0.05;
+sim_time = 15;
+fs = 20; %sampling rate
+dT = 1 / fs;
 xi = zeros(1,24); % intial state for x
 LeftS = 0;
 RightS = 0;
@@ -80,23 +81,36 @@ end
 
 %----------------------------------------------%
 
+%setup filter
+n = 5;
+fCut = 5; %filter cutoff 
+wn = fCut / (fs / 2) %normalise cutoff frequency to nyquist
+filtType = 'low';
+firCoeffs = fir1(n, wn, filtType);
+myFilter = FIRFilter(firCoeffs); %create filter object (FIRFilter.m)
+
 %----------------------------------------------%
 ObjectAvoider = readfis('ObjectAvoider.fis');
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
 
-targetX = -1
-targetY = -1
+targetX = 2;
+targetY = 0;
+%targetX = 3.5
+%targetY = 2.5
+
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
-Vd = 1; %drive voltage
-motorGain = 7;
+Vd = 1.0; %drive voltage
+motorGain = 8;
 Kd = 0.0;
 Kp = 10/pi;
 Ki = 10/pi;
 K = [Kp, Ki, Kd];
 
 prevError = 0;
+
+
 
 for outer_loop = 1:(sim_time/dT)
 
@@ -109,10 +123,10 @@ for outer_loop = 1:(sim_time/dT)
     %calculate current radius from target waypoint
     deltaX = xi(19) - targetX;
     deltaY = xi(20) - targetY;
-    radius = sqrt(deltaX^2 + deltaY^2)
+    radius = sqrt(deltaX^2 + deltaY^2);
 
-    headingAngle = xi(24)
-    refAngle
+    headingAngle = xi(24);
+    refAngle;
 
     %disp([xi(19), xi(20), xi(24), refAngle])
 
@@ -120,31 +134,44 @@ for outer_loop = 1:(sim_time/dT)
     angleError = refAngle - headingAngle;
 
     if atWaypoint
-        Vl = 0
-        Vr = 0
+        Vl = 0;
+        Vr = 0;
     else
         %this controller provides object avoidance 
         %determines a desired turn command based
         %   solely on the proximity to an obstacle
-        [wallSlope, wallProx] = evalfis([sensorOut(:,1) sensorOut(:,2)], ObjectAvoider);
-
+        sensorOut
+        avoiderOut = evalfis([sensorOut(:,1) sensorOut(:,2)], ObjectAvoider);
+  
+        %lowpass filter avoider outputs
+        wallSlope = myFilter.filter(avoiderOut(:,1));
+        wallProximity = myFilter.filter(avoiderOut(:,2));
+        
+        %{
+        wallSlope = avoiderOut(:,1);
+        wallProximity = avoiderOut(:,2);
+        %}
+        
         %this controller determines a desired turn command 
         %   based solely on reference and heading angle fuzzy input sets
         headingCmd = evalfis([refAngle, headingAngle], HeadingController);
 
         %this controller takes turn commands from the object avoider
         %   & heading controller to determine the output motor voltages
-        fuzzyOut = evalfis([headingCmd, radius], MotorController)
-
+        wallProximity
+        fuzzyOut = evalfis([headingCmd, radius, wallSlope, wallProximity], MotorController);
+        gainLeft = fuzzyOut(:,1);
+        gainRight = fuzzyOut(:,2);
+       
         %apply individual voltages calculated from fuzzy controller
         if radius > 1
-            Vl = Vd + (motorGain * fuzzyOut(:,1));
-            Vr = Vd + (motorGain * fuzzyOut(:,2));
+            Vl = Vd + (motorGain * gainLeft);
+            Vr = Vd + (motorGain * gainRight);
         else 
             %when close to waypoint, reduce drive voltage proportionally
-            Vd * radius
-            Vl = (Vd * radius) + (motorGain * fuzzyOut(:,1) )
-            Vr = (Vd * radius) + (motorGain * fuzzyOut(:,2) )
+            Vd * radius;
+            Vl = (Vd * radius) + (motorGain * fuzzyOut(:,1) );
+            Vr = (Vd * radius) + (motorGain * fuzzyOut(:,2) );
         end;
         
         %limit the outputs to max voltage range (+- 7.4V)
@@ -163,10 +190,6 @@ for outer_loop = 1:(sim_time/dT)
         %Vr = 6;
 
     end;
-
-    prevError = angleError;
-
-
 
 
 
