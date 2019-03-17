@@ -17,13 +17,13 @@ classdef (ConstructOnLoad = true) FIRFilter  < handle
         function outSample = filter(self, inSample)
             outSample = 0;
             %shift data along buffer by one sample
-            self.buffer
-            self.taps
+            self.buffer;
+            self.taps;
             for count = self.taps:-1:2
                 self.buffer(count) = self.buffer(count-1);
             end;           
             %insert new sample
-            self.buffer(1) = inSample
+            self.buffer(1) = inSample;
             %convolve
             for count = 1 : (self.taps - 1)
                 outSample = outSample + self.buffer(count) * self.coeffs(count);                

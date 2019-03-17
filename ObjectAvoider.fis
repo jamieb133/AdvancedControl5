@@ -13,19 +13,19 @@ DefuzzMethod='centroid'
 
 [Input1]
 Name='distance_{left}'
-Range=[0 1]
+Range=[0 1.25]
 NumMFs=3
-MF1='CLOSE':'trapmf',[-0.45 -0.05 0.05 0.45]
-MF2='NEAR':'trapmf',[0.05 0.45 0.55 0.95]
-MF3='FAR':'trapmf',[0.55 0.95 1.05 1.449]
+MF1='CLOSE':'trapmf',[-0.5625 -0.0625 0.0625 0.5625]
+MF2='NEAR':'trapmf',[0.0625 0.5625 0.6875 1.188]
+MF3='FAR':'trapmf',[0.6875 1.188 1.312 1.812]
 
 [Input2]
 Name='distance_{right}'
-Range=[0 1]
+Range=[0 1.25]
 NumMFs=3
-MF1='CLOSE':'trapmf',[-0.45 -0.05 0.05 0.45]
-MF2='NEAR':'trapmf',[0.05 0.45 0.55 0.95]
-MF3='FAR':'trapmf',[0.55 0.95 1.05 1.449]
+MF1='CLOSE':'trapmf',[-0.5625 -0.0625 0.0625 0.5625]
+MF2='NEAR':'trapmf',[0.0625 0.5625 0.6875 1.188]
+MF3='FAR':'trapmf',[0.6875 1.188 1.312 1.811]
 
 [Output1]
 Name='wallSlope'
