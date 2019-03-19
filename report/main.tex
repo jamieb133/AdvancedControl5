@@ -1,0 +1,133 @@
+
+%------------DOC TYPE-------------------%
+\documentclass[11pt]{article}
+
+%-----------INCLUDES----------------------%
+\usepackage[english]{babel}
+\usepackage[utf8x]{inputenc}
+\usepackage[left=2.5cm, right=2cm, top=2.5cm]{geometry} %margins
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[colorinlistoftodos]{todonotes}
+\usepackage{subfiles}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{verbatim}
+\usepackage[bottom]{footmisc}
+\usepackage{float} %CONCRETE FIGURE PLACEMENT
+\usepackage{listings} %CODE LISINGS
+\usepackage{color}
+\usepackage{tikzit}
+\usepackage{bm}
+\usepackage{tabu}
+\usepackage{hhline}
+\usepackage[T1]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[english]{babel}
+\usepackage{csvsimple}
+\usepackage{hyperref}
+%\usepackage{pgflibraryarrows}
+
+%----------------TIKZ STYLES---------------%
+%\input{3-CommsIP/figs/ptpStyle.tikzstyles}
+
+\setcounter{secnumdepth}{2}
+
+%---------------PAGE STYLE/HEADER-FOOTER-------------------%
+\pagestyle{fancy}% Change page style to fancy
+\fancyhf{}% Clear header/footer
+\fancyhead[R]{2127147b}
+%\fancyhead[L]{}
+\fancyfoot[R]{\thepage}% \fancyfoot[R]{\thepage}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+\fancypagestyle{plain}{} %put HF on chapter page
+ 
+ % footnote in footer
+\renewcommand*\footnoterule{}
+ 
+%-------------TITLE CONFIG--------%
+%\titleformat{\chapter}[display]
+ % {\normalfont\bfseries}{}{0pt}{\LARGE}
+
+ %-----------FONT--------------%
+ %\renewcommand{\familydefault}{ptm}
+
+%-----------GRAPHICS---------------%
+\graphicspath{{../figures/}}
+
+%-------LISTINGS----------%
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+ 
+\lstdefinestyle{mystyle}
+{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{blue},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=1
+}
+
+
+\lstset
+{
+    emph={BYTE_SWAP},
+    emphstyle={\color{orange}},
+    otherkeywords = {memset, memcpy},
+    style=mystyle
+}
+
+\providecommand{\main}{.}
+
+%------------STRUCTURE------------%
+\begin{document}
+
+\title{Advanced Control 5 (ENG5009) \\ \large{Lab Assignment}}
+\author{2127147b}
+\maketitle
+
+\begin{abstract}
+    \addcontentsline{toc}{chapter}{Abstract}
+    The following report outlines the development and testing of a waypoint following and obstacle avoidance system for the simulation of an autonomous robot in MATLAB.
+    The system presented uses fuzzy logic controllers to generate desired turning commands and motor gains, a range of different input types were used alongside basic signal processing techniques to provide the fuzzy controllers with sufficient insight into the surrounding environment.
+    The controller was found to produce reasonably successful results with the robot travelling to a specific coordinate with a 0.05m radius tolerance. 
+    Further development and fine-tuning was carried out to optimise the controller performance for a set of different scenarios. 
+    \end{abstract}
+
+\section{Introduction}
+
+\section{Methodology}
+
+\section{Results and Testing}
+
+\section{Discussion}
+
+\section{Conclusion}
+
+\pagebreak
+\bibliographystyle{unsrt}
+\bibliography{refs}
+
+\appendix
+\chapter{Main Simulation Code}
+
+\chapter{FIRFilter Class}
+
+\chapter{Lab 1 Answer Sheet}
+
+
+\end{document}

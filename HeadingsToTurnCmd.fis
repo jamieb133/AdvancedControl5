@@ -9,7 +9,7 @@ AndMethod='min'
 OrMethod='max'
 ImpMethod='min'
 AggMethod='max'
-DefuzzMethod='centroid'
+DefuzzMethod='bisector'
 
 [Input1]
 Name='psi_{ref}'

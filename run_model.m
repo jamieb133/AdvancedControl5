@@ -1,4 +1,16 @@
-
+%
+% Main simulation with control system
+%
+% Author: Jamie Brown
+% File: run_model.m
+%
+% Created: 25/02/19
+%
+% Changes
+%               
+%
+%
+%
 %----------------------------------------------%
 close all;
 clear all;
@@ -60,15 +72,14 @@ end
 %----------------------------------------------%
 %setup filters
 n = 2;
-fCut = fn - 0.00001; %filter cutoff
+fCut = fn/1.5; %filter cutoff
 wn = fCut / (fs / 2) %normalise cutoff frequency to nyquist
 filtType = 'low';
 firCoeffs = fir1(n, wn, filtType);
 leftFilter = FIRFilter(firCoeffs); %filter for right motor
 rightFilter = FIRFilter(firCoeffs); %filter for left motor
 
-sensorCoeffs = fir1(20, 0.2999999, 'low');
-sensorFilter = FIRFilter(sensorCoeffs);
+sensorDelay = zeros(1, fs*2); %simple moving average buffer for wall proximity
 %----------------------------------------------%
 
 %----------------------------------------------%
@@ -76,12 +87,16 @@ ObjectAvoider = readfis('ObjectAvoider.fis');
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
 
-%xi(19) = 0;
-%xi(20) = 0;
-targetX = 0;
-targetY = 3;
 targetX = 3.5;
 targetY = 2.5
+
+%change these for different scenarios
+xi(19) = 0
+xi(20) = 1;
+xi(24) = pi/2;
+targetX = -0.5;
+targetY = 3.5;
+
 
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
@@ -112,7 +127,7 @@ for outer_loop = 1:(sim_time/dT)
         Vr = 0;
     else
         %obtain current distance to obstacle
-        sensorOut = ObsSensor1(xi(19), xi(20), [0.2 0], xi(24), Obs_Matrix);
+        sensorOut = ObsSensor1(xi(19), xi(20), [0.2 0], xi(24), Obs_Matrix)
 
         %calculate wall angle and proximity
         wallAngle = atan( (sensorOut(:,2) - sensorOut(:,1)) / 0.2);
@@ -126,20 +141,27 @@ for outer_loop = 1:(sim_time/dT)
         %   based solely on reference and heading angle fuzzy input sets
         headingCmd = evalfis([refAngle, headingAngle], HeadingController);
 
-        %lowpassed FIR value of wall proximity allows the fuzzy motor controller to estimate whether
-        %   or not it is parallel to a wall while the robot "snakes" alongside it
-        wallProximityFiltered = sensorFilter.filter(wallProximity);
+        %take moving average value of wall proximity 
+        %   (allows the fuzzy motor controller to estimate whether
+        %   or not it is parallel to a wall while the robot "snakes" alongside it)
+        sensorDelay = circshift(sensorDelay, 1);
+        sensorDelay(1) = wallProximity;
+        wallProximityFiltered = mean(sensorDelay)
+        %wallProximityFiltered = 1;
 
         %this controller takes a turn command from the heading controller
         % and determines the output motor voltages depending on whether or 
         %   not a wall is detected or assumed to be parallel
         fuzzyOut = evalfis([headingCmd, radius, wallAngle, wallProximity, wallProximityFiltered], MotorController);
 
+        %generate coefficients for new filter cutoff frequency
+        newCoeffs = fir1(n, fuzzyOut(:,3), 'low');
+        leftFilter.coeffs = newCoeffs;
+        rightFilter.coeffs = newCoeffs;
+
         %apply lowpass filter to fuzzy motor gains to smoothen
         gainLeft = leftFilter.filter(fuzzyOut(:,1));
         gainRight = rightFilter.filter(fuzzyOut(:,2));
-        %gainLeft = fuzzyOut(:,1);
-        %gainRight = fuzzyOut(:,2);
        
         %apply individual voltages calculated from fuzzy controller
         if radius > 1
@@ -149,9 +171,9 @@ for outer_loop = 1:(sim_time/dT)
             Vr = Vd + (motorGain * gainRight);
         else 
             if wallProximity < 1
-                %disable drive voltage while in viscinity of wall
-                Vl = motorGain * gainLeft;
-                Vr = motorGain * gainRight;
+                %while in viscinity of wall, reduce drive voltage proprtionally
+                Vl = (Vd * wallProximity) + (motorGain * gainLeft);
+                Vr = (Vd * wallProximity) + (motorGain * gainRight);
             else
                 %when close to waypoint, reduce drive voltage proportionally
                 Vd * radius;
