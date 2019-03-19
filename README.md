@@ -9,6 +9,7 @@ A waypoint following and obstacle avoidance system for the simulation of an auto
 To run the simulation type:
 - `run_model`
 
+### Included files
 - run_model.m: main simulation file
 - HeadingsToTurnCommand.fis: fuzzy trajectory controller
 - TurnCommand.fis: fuzzy motor controller
