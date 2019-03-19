@@ -10,7 +10,7 @@ classdef (ConstructOnLoad = true) FIRFilter  < handle
             tapSize = size(coeffs)
             self.taps = tapSize(2)
             self.coeffs = coeffs
-            self.buffer = zeros(1, self.taps - 1)
+            self.buffer = ones(1, self.taps - 1)
         end
         
         %filters samples via convolution
