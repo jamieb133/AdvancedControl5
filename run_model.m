@@ -91,12 +91,13 @@ targetX = 3.5;
 targetY = 2.5
 
 %change these for different scenarios
+%{
 xi(19) = 0
 xi(20) = 1;
 xi(24) = pi/2;
 targetX = -0.5;
 targetY = 3.5;
-
+%}
 
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
@@ -127,7 +128,7 @@ for outer_loop = 1:(sim_time/dT)
         Vr = 0;
     else
         %obtain current distance to obstacle
-        sensorOut = ObsSensor1(xi(19), xi(20), [0.2 0], xi(24), Obs_Matrix)
+        sensorOut = ObsSensor1(xi(19), xi(20), [0.2 0], xi(24), Obs_Matrix);
 
         %calculate wall angle and proximity
         wallAngle = atan( (sensorOut(:,2) - sensorOut(:,1)) / 0.2);
@@ -146,7 +147,7 @@ for outer_loop = 1:(sim_time/dT)
         %   or not it is parallel to a wall while the robot "snakes" alongside it)
         sensorDelay = circshift(sensorDelay, 1);
         sensorDelay(1) = wallProximity;
-        wallProximityFiltered = mean(sensorDelay)
+        wallProximityFiltered = mean(sensorDelay);
         %wallProximityFiltered = 1;
 
         %this controller takes a turn command from the heading controller
