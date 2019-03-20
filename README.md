@@ -19,5 +19,6 @@ To run the simulation type:
 - **WallGeneration.m:** self explanatory
 - **FIRFilter.m:** sample by sample filter 
 - **NeuralController.m:** basic obstacle avoidance controller for lab 1 (not used in final simulation)
+- **PlotFuzzySets.m** plots all membership functions for each controller and saves each graph as an svg file
 
 
