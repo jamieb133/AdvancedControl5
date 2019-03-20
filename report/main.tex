@@ -26,6 +26,10 @@
 \usepackage[english]{babel}
 \usepackage{csvsimple}
 \usepackage{hyperref}
+\usepackage{epsfig}
+\usepackage{makecell}
+\usepackage{array}
+\usepackage{xcolor,colortbl}
 %\usepackage{pgflibraryarrows}
 
 %----------------TIKZ STYLES---------------%
@@ -55,6 +59,14 @@
 
 %-----------GRAPHICS---------------%
 \graphicspath{{../figures/}}
+\input{control5.tikzstyles}
+
+%-------TABLES----------%
+\newcolumntype{?}{!{\vrule width 1pt}}
+
+\definecolor{jamie}{rgb}{1,1,0.82}
+\newcommand{\done}{\cellcolor{jamie}done}  %{0.9}
+\newcommand{\hcyan}[1]{{\color{teal} #1}}
 
 %-------LISTINGS----------%
 \definecolor{codegreen}{rgb}{0,0.6,0}
@@ -114,11 +126,63 @@
 \section{Methodology}
 \subsection{Overview of System}
 
+\begin{figure}[H]
+    \centering
+    \ctikzfig{./figures/SystemDiagram}
+    \caption{Block Diagram of Control System}
+    \label{fig:system}
+\end{figure}
+
+
 \pagebreak
 \subsection{Task 1: Waypoint Following}
 \subsubsection{Overview}
 \subsubsection{Fuzzy Sets}
+%INPUT SETS
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/HeadingControlInput2.eps}
+\caption{Membership Functions for Heading Angle Input}
+\end{figure}
+
+%OUTPUT SETS
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/HeadingControlOutput1.eps}
+\caption{Membership Functions for Turn Command Output}
+\end{figure}
+
 \subsubsection{Rules}
+\begin{table}[H]
+    \centering  
+    \caption{Fuzzy Logic Rules for Path Controller}
+    \begin{tabu} to 0.8\textwidth { ? l | l ? l ? l ?}
+        \Xhline{2\arrayrulewidth}
+        $\psi_{ref}$   & $\psi$ &  \cellcolor{jamie} \textbf{TURN CMD} \\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+        $S_{-ve}$  &  $S_{-ve}$ &\cellcolor{jamie} $FWD$\\
+        \hline
+        $S_{-ve}$ &  $SW$ &\cellcolor{jamie} $L_{soft}$\\ 
+        \hline
+        $S_{-ve}$ &  $W$ &\cellcolor{jamie} $L_{hard}$\\
+        \hline
+        $S_{-ve}$ & $NW$ &\cellcolor{jamie} $L_{rot}$\\
+        \hline
+        $S_{-ve}$ &  $N$ &\cellcolor{jamie} $L_{rev}$\\
+        \hline
+        $S_{-ve}$ & $NE$ & \cellcolor{jamie} $R_{rot}$\\
+        \hline
+        $S_{-ve}$ & $E$ & \cellcolor{jamie} $R_{hard}$\\
+        \hline 
+        $S_{-ve}$ & $SE$ & \cellcolor{jamie} $R_{soft}$\\
+        \hline
+        $S_{-ve}$  & $S_{+ve}$ & \cellcolor{jamie} $FWD$\\
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:IPfuncs}
+    \end{table}
 \subsubsection{Verification}
 
 \pagebreak
@@ -126,6 +190,41 @@
 
 \subsubsection{Overview}
 \subsubsection{Fuzzy Sets}
+%INPUTS
+%turn command input the same as output from other controller
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/MotorControlInput2.eps}
+\caption{Membership Functions for Radius Input}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/MotorControlInput3.eps}
+\caption{Membership Functions for Wall Angle Input}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/MotorControlInput4.eps}
+\caption{Membership Functions for Wall Proximity Input}
+\end{figure}
+
+%filtered proximity functions the same as unfiltered
+
+%OUTPUTS
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=0.75]{./figures/MotorControlOutput1.eps}
+\caption{Membership Functions for Motor Gain Outputs}
+\end{figure}
+
+\begin{figure}
+    \centering
+\includegraphics[scale=0.75]{./figures/MotorControlOutput3.eps}
+\caption{Membership Functions for Filter Cutoff Frequency Output}
+\end{figure}
+
 \subsubsection{Rules}
 \subsubsection{Verification}
 
