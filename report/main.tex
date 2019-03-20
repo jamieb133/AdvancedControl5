@@ -31,7 +31,7 @@
 %----------------TIKZ STYLES---------------%
 %\input{3-CommsIP/figs/ptpStyle.tikzstyles}
 
-\setcounter{secnumdepth}{2}
+\setcounter{secnumdepth}{3}
 
 %---------------PAGE STYLE/HEADER-FOOTER-------------------%
 \pagestyle{fancy}% Change page style to fancy
@@ -104,30 +104,59 @@
     \addcontentsline{toc}{chapter}{Abstract}
     The following report outlines the development and testing of a waypoint following and obstacle avoidance system for the simulation of an autonomous robot in MATLAB.
     The system presented uses fuzzy logic controllers to generate desired turning commands and motor gains, a range of different input types were used alongside basic signal processing techniques to provide the fuzzy controllers with sufficient insight into the surrounding environment.
-    The controller was found to produce reasonably successful results with the robot travelling to a specific coordinate with a 0.05m radius tolerance. 
-    Further development and fine-tuning was carried out to optimise the controller performance for a set of different scenarios. 
+    The controller was found to produce successful results with the robot travelling to a specific coordinate with a 0.05m radius tolerance. 
+    Further development and fine-tuning was carried out to optimise the controller performance for a set of different scenarios.
+    All code can be found on GitHub at \cite{github}, relevant code is included in the appendices.  
     \end{abstract}
 
 \section{Introduction}
 
 \section{Methodology}
+\subsection{Overview of System}
+
+\pagebreak
+\subsection{Task 1: Waypoint Following}
+\subsubsection{Overview}
+\subsubsection{Fuzzy Sets}
+\subsubsection{Rules}
+\subsubsection{Verification}
+
+\pagebreak
+\subsection{Task 2: Obstacle Avoidance}
+
+\subsubsection{Overview}
+\subsubsection{Fuzzy Sets}
+\subsubsection{Rules}
+\subsubsection{Verification}
+
+\pagebreak
 
 \section{Results and Testing}
+\subsubsection{Assigned Waypoint}
+\subsubsection{Wall Tracking}
+%average filter
+\subsubsection{Perpendicular Approach}
+%jolting, reducing flat member func
+%filter
 
+\pagebreak
 \section{Discussion}
-
-\section{Conclusion}
+\subsection{Evaluation}
+\subsection{Further Work}
+%unused variables (velocity, rotational velocity)
 
 \pagebreak
 \bibliographystyle{unsrt}
 \bibliography{refs}
 
+\pagebreak
 \appendix
-\chapter{Main Simulation Code}
-
-\chapter{FIRFilter Class}
-
-\chapter{Lab 1 Answer Sheet}
+\section{Main Simulation Code}
+\lstinputlisting[language = matlab]{../run_model.m}
+\pagebreak
+\section{FIRFilter Class}
+\lstinputlisting[language = matlab]{../FIRFilter.m}
+\section{Lab 1 Answer Sheet}
 
 
 \end{document}
