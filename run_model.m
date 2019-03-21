@@ -91,18 +91,20 @@ targetX = 3.5;
 targetY = 2.5
 
 %change these for different scenarios
-%{
+
 xi(19) = 0
-xi(20) = 1;
-xi(24) = pi/2;
-targetX = -0.5;
-targetY = 3.5;
-%}
+xi(20) = -0;
+%xi(24) = pi/2;
+targetX = 2.5;
+targetY = -0;
+
 
 targetWaypoint = [targetX, targetY];
 simpleGain = 10/pi;
 Vd = 2.5; %drive voltage
 motorGain = 15;
+
+time = zeros(1, sim_time/dT);
 %----------------------------------------------%
 
 
@@ -227,11 +229,14 @@ for outer_loop = 1:(sim_time/dT)
     plot(wall3(:,1),wall3(:,2),'k-');
     plot(wall4(:,1),wall4(:,2),'k-');
     pause(0.001);
+
+    time(outer_loop) = outer_loop*dT;
     %----------------------------------------------%
     
 end
 %----------------------------------------------%
-
+disp(xi(19));
+disp(xi(20));
 %----------------------------------------------%
 %PLOTS
 
@@ -264,5 +269,11 @@ plot(VlResults(:,1));
 title('Right Motor Voltage');
 xlabel('Time (s)');
 ylabel('Voltage (V)');
+
+figure(7);
+plot(time, xio(:,18));
+title('Rotational Velocity');
+xlabel('Time (s)');
+ylabel('Rotional Velocity (rads/s)');
 
 %----------------------------------------------%

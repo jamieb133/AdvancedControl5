@@ -31,12 +31,14 @@
 \usepackage{array}
 \usepackage{xcolor,colortbl}
 \usepackage{fixltx2e}
+\usepackage{caption}
+\usepackage{subcaption}
 %\usepackage{pgflibraryarrows}
 
 %----------------TIKZ STYLES---------------%
 %\input{3-CommsIP/figs/ptpStyle.tikzstyles}
 
-\setcounter{secnumdepth}{3}
+\setcounter{secnumdepth}{2}
 
 %---------------PAGE STYLE/HEADER-FOOTER-------------------%
 \pagestyle{fancy}% Change page style to fancy
@@ -127,6 +129,11 @@
 
 \section{Methodology}
 \subsection{Overview of System}
+Two cascaded fuzzy controllers are used, the first (path controller) determines a desired turn command based solely on the robot's current heading angle ($\psi$) and its angle relative to a desired waypoint ($\psi_{ref}$).
+The second controller takes the generated turn command and inputs relating to a nearby object ($d_{wall}$, $\bar{d}_{wall}$, $\Theta_{wall}$, $r$) to determine appropriate gains for the left and right motors.
+A variable lowpass FIR filter is used for each motor gain output to smooth the voltages, its cutoff frequency is controlled by one of the fuzzy motor controller's outputs.
+A proportional drive voltage is applied to each motor that varies with the robot's distance from the waypoint, it remains constant until close to the waypoint. 
+A block diagram fof the system can be seen in figure \ref{fig:system}.
 
 \begin{figure}[H]
     \centering
@@ -136,108 +143,194 @@
 \end{figure}
 
 
-\pagebreak
+
 \subsection{Task 1: Waypoint Following}
 \subsubsection{Overview}
+The aim of this task is to guide the robot to a set waypoint without obstacle avoidance.
+This was achieved using fuzzy logic to evaluate a desired turn command by comparing the robot's current heading angle ($\psi$) with its angle relative to the waypoint ($\psi_{ref}$).
+The fuzzy logic is implemented to drive the error between both angles to zero such that the robot travels in the direction of the waypoint.
+ 
+\medskip
+A second fuzzy controller was created to control the gain applied to the motors, it takes the generated turn command and radius from the waypoint as inputs.
+As the robot approaches the waypoint, the rules are altered to enable coarser manoeuvres to allow it to stop within a 0.05m tolerance.
+A drive voltage is also proportionally reduced as the robot's position converges on the waypoint. 
+
 \subsubsection{Fuzzy Sets}
-%INPUT SETS
+
+The input variables to the path controller are the heading and reference angles, they are measured from 0 rads (north), to either $-\pi$ or $+\pi$ rads (south) where a negative angle represents a counterclockwise angle and vice versa.
+Nine fuzzy input sets were derived as follows, \{S\textsubscript{-ve}, SW, W, NW, N, NE, E, SE, S\textsubscript{+ve}\}, where N is north, NE is north-east etc, these sets are identical for both the heading and reference angle inputs.
+S\textsubscript{-ve} and S\textsubscript{+ve} both represent a range around south as the angle jumps from -$\pi$ to $+\pi$ and are therefore treated as the same set in the fuzzy rules. 
+Trapezoidal membership functions were used for fuzzification, they can be seen for the heading angle input in figure \ref{fig:headingSets}, the sets for the reference angle input are identical.
+
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/HeadingControlInput2.eps}
 \caption{Membership Functions for Heading Angle Input}
+\label{fig:headingSets}
 \end{figure}
 
-%OUTPUT SETS
+The path controller output variable is a turning command with the derived set, 
+\{L\textsubscript{rev}, L\textsubscript{rot}, L\textsubscript{hard}, L\textsubscript{soft}, FWD, R\textsubscript{soft}, R\textsubscript{hard}, R\textsubscript{rot}, R\textsubscript{rev}\},
+for reverse, rotate, hard, soft and forward manoeuvres respectively. 
+These commands allow for a variety of coarse or fine turning adjustments to be made by the motor controller, trapezoidal membership were used for the fuzzification and can be seen in figure \ref{fig:commandSets}
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/HeadingControlOutput1.eps}
 \caption{Membership Functions for Turn Command Output}
+\label{fig:commandSets}
+\end{figure}
+
+The second input to the motor controller is the robot's radius to the waypoint with the following set, \{VN, N, F, VF\}, representing very-near, near, far and very-far respectively.
+This is used to execute tighter turning manoeuvres when close to the waypoint as when the robot is very-near to the waypoint, the turn command will begin to change much more rapidly.
+This therefore needs to be taken into account such that the robot can navigate to within 0.05m.
+The radius is also used in the main code to proportionally reduce the drive voltage on approach to the waypoint.
+Trapezoidal membership functions are used and can be seen in figure \ref{fig:radiusSets}.
+
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=\graphScale]{./figures/MotorControlInput2.eps}
+\caption{Membership Functions for Radius Input}
+\label{fig:radiusSets}
+\end{figure}
+
+The motor controller produces gains for the motors as outputs in the range of -1 to 1 with the derived set, \{REV\textsubscript{hard}, REV\textsubscript{soft}, OFF, FWD\textsubscript{soft}, FWD\textsubscript{hard}\},
+representing hard-reverse, soft-reverse, off, soft-forward and hard-forward manoeuvres repectively. 
+These gains are scaled in the main code to an appropriate range and limited to the maximum range of $\pm$7.4V. 
+Triangular membership functions are used and can be seen in figure \ref{fig:motorSets}.
+
+
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=\graphScale]{./figures/MotorControlOutput1.eps}
+\caption{Membership Functions for Motor Gain Outputs}
+\label{fig:motorSets}
 \end{figure}
 
 \subsubsection{Rules}
+The path controller will produce a turning command that is appropriate for the robot's heading in relation to the its reference angle to the waypoint.
+For example: \textbf{IF} the robot is facing north ($\psi$=N) \textbf{AND} its bearing is north east ($\psi_{ref}$=NE), \textbf{THEN} turn soft right (R\textsubscript{soft}).
+In this situation only a soft right turn is required as angles in north and north-east are likely to be close together, a harder manoeuvre is more likely to result in an undesired overshoot.
+Rules were derived for each combination of headings and reference angles, a sample of the 81 rules can be seen in table \ref{table:cmdRules} for heading of south-positive and south-west.
+The entire set of rules are included in appendix ???????????????????.
+
 \begin{table}[H]
     \centering  
-    \caption{Sample of Fuzzy Logic Rules for Path Controller}
+    \caption{Sample of Fuzzy Logic Rules for Path Controller (outputs in yellow)}
     \begin{tabu} to 0.8\textwidth { ? l | l ? l ? l ?}
         \Xhline{2\arrayrulewidth}
         $\psi_{ref}$   & $\psi$ &  \cellcolor{jamie} \textbf{TURN CMD} \\
         %\hhline{|=|=||=|}
         \Xhline{2\arrayrulewidth}
-        $S_{-ve}$  &  $S_{-ve}$ &\cellcolor{jamie} $FWD$\\
+        S\textsubscript{-ve}  &  S\textsubscript{-ve}  &\cellcolor{jamie} FWD\\
         \hline
-        $S_{-ve}$ &  $SW$ &\cellcolor{jamie} $L_{soft}$\\ 
+        S\textsubscript{-ve}  &  SW &\cellcolor{jamie} L\textsubscript{soft}\\ 
         \hline
-        $S_{-ve}$ &  $W$ &\cellcolor{jamie} $L_{hard}$\\
+        S\textsubscript{-ve}  &  W &\cellcolor{jamie} L\textsubscript{hard}\\
         \hline
-        $S_{-ve}$ & $NW$ &\cellcolor{jamie} $L_{rot}$\\
+        S\textsubscript{-ve}  & NW&\cellcolor{jamie} L\textsubscript{rot}\\
         \hline
-        $S_{-ve}$ &  $N$ &\cellcolor{jamie} $L_{rev}$\\
+        S\textsubscript{-ve}  &  N&\cellcolor{jamie} L\textsubscript{rev}\\
         \hline
-        $S_{-ve}$ & $NE$ & \cellcolor{jamie} $R_{rot}$\\
+        S\textsubscript{-ve}  & NE & \cellcolor{jamie} R\textsubscript{rot}\\
         \hline
-        $S_{-ve}$ & $E$ & \cellcolor{jamie} $R_{hard}$\\
+        S\textsubscript{-ve}  & E & \cellcolor{jamie} R\textsubscript{hard}\\
         \hline 
-        $S_{-ve}$ & $SE$ & \cellcolor{jamie} $R_{soft}$\\
+        S\textsubscript{-ve}  & SE & \cellcolor{jamie} R\textsubscript{soft}\\
         \hline
-        $S_{-ve}$  & $S_{+ve}$ & \cellcolor{jamie} $FWD$\\
+        S\textsubscript{-ve}   & S\textsubscript{+ve}  & \cellcolor{jamie} FWD\\
 
         \hline 
-        $SW$ & $S_{-ve}$ & \cellcolor{jamie} $R_{soft}$\\
+        SW & S\textsubscript{-ve}  & \cellcolor{jamie} R\textsubscript{soft}\\
         \hline
-        $SW$  & $SW$  &\cellcolor{jamie} $FWD$\\
+        SW  & SW  &\cellcolor{jamie} FWD\\
         \hline
-        $SW$ &  $W$ &\cellcolor{jamie} $L_{soft}$\\ 
+        SW &  W &\cellcolor{jamie} L\textsubscript{soft}\\ 
         \hline
-        $SW$ &  $NW$ &\cellcolor{jamie} $L_{hard}$\\
+        SW &  NW &\cellcolor{jamie} L\textsubscript{hard}\\
         \hline
-        $SW$ & $N$ &\cellcolor{jamie} $L_{rot}$\\
+        SW& N &\cellcolor{jamie} L\textsubscript{rot}\\
         \hline
-        $SW$ &  $NE$ &\cellcolor{jamie} $L_{rev}$\\
+        SW&  NE &\cellcolor{jamie} L\textsubscript{rev}\\
         \hline
-        $SW$ & $E$ & \cellcolor{jamie} $R_{rot}$\\
+        SW& E & \cellcolor{jamie} R\textsubscript{rot}\\
         \hline
-        $SW$ & $SE$ & \cellcolor{jamie} $R_{hard}$\\
+        SW & SE & \cellcolor{jamie} R\textsubscript{hard}\\
         \hline 
-        $SW$ & $S_{+ve}$ & \cellcolor{jamie} $R_{soft}$\\
-
-        \hline
-        $W$ & $S_{-ve}$  & \cellcolor{jamie} $R_{hard}$\\
-        \hline 
-        $W$ & $SW$ & \cellcolor{jamie} $R_{soft}$\\
-        \hline
-        $W$  &  $W$ &\cellcolor{jamie} $FWD$\\
-        \hline
-        $W$ &  $NW$ &\cellcolor{jamie} $L_{soft}$\\ 
-        \hline
-        $W$ &  $N$ &\cellcolor{jamie} $L_{hard}$\\
-        \hline
-        $W$ & $NE$ &\cellcolor{jamie} $L_{rot}$\\
-        \hline
-        $W$ &  $E$ &\cellcolor{jamie} $L_{rev}$\\
-        \hline
-        $W$ & $SE$ & \cellcolor{jamie} $R_{rot}$\\
-        \hline
-        $W$ & $S_{+ve}$ & \cellcolor{jamie} $R_{hard}$\\
+        SW& S\textsubscript{+ve} & \cellcolor{jamie} R\textsubscript{soft}\\
 
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
-    \label{table:IPfuncs}
+    \label{table:cmdRules}
+\end{table}
+
+The motor controller interprets these turn commands by applying appropriate gains to the left and right motors such that robot executes the requested turning manoeuvre.
+For example: \textbf{IF} the requested manoeuvre is a soft-right turn (TURN CMD = R\textsubscript{soft}) \textbf{AND} the robot is not very-near to the waypoint ($r$!=VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is OFF.
+If the robot is very-near to the waypoint then it will only execute rotational manoeuvres, for example:
+\textbf{IF} the requested manoeuvre is a soft-right turn \textbf{AND} the robot is very-near ($r$=VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is REV\textsubscript{soft}.
+These rules can be seen in table \ref{table:motorOut1}
+
+\begin{table}[H]
+    \centering  
+    \caption{Truth table of motor controller rules (outputs in yellow)}
+    \begin{tabu} to 0.8\textwidth { ? l | l | l | l ?}
+        \Xhline{2\arrayrulewidth}
+        \textbf{TURN CMD}   & $r$  &\cellcolor{jamie} $A_{left}$ & \cellcolor{jamie} $A_{right}$ \\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+        FWD  &  !VN &                              \cellcolor{jamie} FWD\textsubscript{soft} & \cellcolor{jamie} FWD\textsubscript{soft} \\
+        \hline
+        L\textsubscript{soft} &!VN   &            \cellcolor{jamie} OFF &          \cellcolor{jamie}FWD \textsubscript{soft} \\ 
+        \hline
+        L\textsubscript{hard} &!VN   &             \cellcolor{jamie} REV\textsubscript{soft} &          \cellcolor{jamie}FWD \textsubscript{hard} \\ 
+        \hline
+        L\textsubscript{rot}& !VN &             \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD \textsubscript{hard}\\
+        \hline
+        L\textsubscript{rev} &  !VN &             \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}\\
+        \hline
+        R\textsubscript{rev} & !VN &             \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}REV\textsubscript{hard}\\
+        \hline
+        R\textsubscript{rot} & !VN &             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}\\
+        \hline 
+        R\textsubscript{hard}& !VN&              \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}\\
+        \hline
+        R\textsubscript{soft}  & !VN &             \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}OFF\\
+
+        \hline
+        FWD  &  VN &                            \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{soft}\\
+        \hline
+        L\textsubscript{soft} &VN   &          \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{soft}\\
+        \hline
+        L\textsubscript{hard} &VN    &           \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}\\
+        \hline
+        L\textsubscript{rot}& VN     &            \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}\\
+        \hline
+        L\textsubscript{rev} &  VN &              \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}\\
+        \hline
+        R\textsubscript{rev} & VN &         \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}\\
+        \hline
+        R\textsubscript{rot} & VN &              \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}\\
+        \hline 
+        R\textsubscript{hard}& VN&             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}\\
+        \hline
+        R\textsubscript{soft}  & VN &             \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}REV\textsubscript{soft}\\
+
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:motorOut1}
     \end{table}
+
 \subsubsection{Verification}
 
-\pagebreak
+
 \subsection{Task 2: Obstacle Avoidance}
 
 \subsubsection{Overview}
 \subsubsection{Fuzzy Sets}
 %INPUTS
 %turn command input the same as output from other controller
-\begin{figure}[H]
-    \centering
-\includegraphics[scale=\graphScale]{./figures/MotorControlInput2.eps}
-\caption{Membership Functions for Radius Input}
-\end{figure}
+
 
 \begin{figure}[H]
     \centering
@@ -254,11 +347,7 @@
 %filtered proximity functions the same as unfiltered
 
 %OUTPUTS
-\begin{figure}[H]
-    \centering
-\includegraphics[scale=\graphScale]{./figures/MotorControlOutput1.eps}
-\caption{Membership Functions for Motor Gain Outputs}
-\end{figure}
+
 
 \begin{figure}
     \centering
@@ -318,19 +407,119 @@
     
     \label{table:IPfuncs}
     \end{table}
-\subsubsection{Verification}
 
-\pagebreak
+%wall avoidance
+\begin{table}[H]
+    \centering  
+    \caption{Truth table of motor controller rules when within proximity of a wall}
+    \begin{tabu} to 0.8\textwidth { ? l | l | l | l | l ? l | l | l ?}
+        \Xhline{2\arrayrulewidth}
+        \textbf{TURN CMD}   & $r$ & $\Theta_{wall}$ &  $d_{wall}$ & $\bar{d}_{wall}$ &\cellcolor{jamie} $A_{left}$ & \cellcolor{jamie} $A_{right}$ & \cellcolor{jamie} $\omega_{cut}$\\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+    
+        X & X & +ve\textsubscript{hard} & NEAR & X &             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        X & X & +ve\textsubscript{soft} & NEAR & X &             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline 
+        X & X & +ve\textsubscript{hard} & CLOSE & X &             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        X & X & +ve\textsubscript{soft} & CLOSE & X &             \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        X & X & -ve\textsubscript{hard} & NEAR & X &             \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        X & X & -ve\textsubscript{soft} & NEAR & X &             \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline 
+        X & X & -ve\textsubscript{hard} & CLOSE & X &             \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        X & X & -ve\textsubscript{soft} & CLOSE & X &             \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+
+
+
+
+        \hline
+        FWD  & X & FLAT & !FAR &X  &                               \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}FAST\\
+        \hline
+        L\textsubscript{any} & X & FLAT & !FAR & X &               \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}FAST\\
+        \hline
+        R\textsubscript{any} & X & FLAT & !FAR & X &               \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}FAST\\
+
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:IPfuncs}
+    \end{table}
+
+%with filtered inputs (wall hugging)
+\begin{table}[H]
+    \centering  
+    \caption{Truth table of motor controller rules when approximately parallel to wall}
+    \begin{tabu} to 0.8\textwidth { ? l | l | l | l | l ? l | l | l ?}
+        \Xhline{2\arrayrulewidth}
+        \textbf{TURN CMD}   & $r$ & $\Theta_{wall}$ &  $d_{wall}$ & $\bar{d}_{wall}$ &\cellcolor{jamie} $A_{left}$ & \cellcolor{jamie} $A_{right}$ & \cellcolor{jamie} $\omega_{cut}$\\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+    
+        R\textsubscript{rev} & !VN & X & FAR & !FAR &               \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{rot} & !VN & X & FAR & !FAR &               \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{rev} & !VN & X & FAR & !FAR &               \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{rot} & !VN & X & FAR & !FAR &               \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:IPfuncs}
+    \end{table}
+
+
 
 \section{Results and Testing}
 \subsubsection{Assigned Waypoint}
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=\graphScale]{./figures/ToWaypoint.eps}
+\caption{Robot path to waypoint (3.5, 2.5) from starting point (-2, -1)}
+\end{figure}
+
+
 \subsubsection{Wall Tracking}
 %average filter
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{.5\textwidth}
+      \centering
+      \includegraphics[scale=0.4]{./figures/SharpTurn_noFilt.eps}
+      \caption{No filtered proximity input rules applied}
+      \label{fig:sub1}
+    \end{subfigure}%
+    \begin{subfigure}{.5\textwidth}
+      \centering
+      \includegraphics[scale=0.4]{./figures/SharpTurn_withFilt.eps}
+      \caption{Robot path with filtered proximity input}
+      \label{fig:sub2}
+    \end{subfigure}
+    \caption{Filtered proximity input rules applied}
+    \label{fig:wallFilter}
+    \end{figure}
 \subsubsection{Perpendicular Approach}
 %jolting, reducing flat member func
 %filter
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=\graphScale]{./figures/PerpApproach.eps}
+\caption{Path from (0, 2.5) to (0, 0) with perpendicular wall, (1.2, -1) to (1.2, 1)}
+\end{figure}
 
-\pagebreak
+\begin{figure}[H]
+    \centering
+\includegraphics[scale=\graphScale]{./figures/PerpRotVel.eps}
+\caption{Rotational velocity when avoiding a perpendicular wall}
+\end{figure}
+
+
 \section{Discussion}
 \subsection{Evaluation}
 \subsection{Further Work}
