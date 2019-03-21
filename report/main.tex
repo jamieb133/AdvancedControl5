@@ -30,6 +30,7 @@
 \usepackage{makecell}
 \usepackage{array}
 \usepackage{xcolor,colortbl}
+\usepackage{fixltx2e}
 %\usepackage{pgflibraryarrows}
 
 %----------------TIKZ STYLES---------------%
@@ -60,6 +61,7 @@
 %-----------GRAPHICS---------------%
 \graphicspath{{../figures/}}
 \input{control5.tikzstyles}
+\newcommand{\graphScale}{0.5}
 
 %-------TABLES----------%
 \newcolumntype{?}{!{\vrule width 1pt}}
@@ -141,21 +143,21 @@
 %INPUT SETS
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/HeadingControlInput2.eps}
+\includegraphics[scale=\graphScale]{./figures/HeadingControlInput2.eps}
 \caption{Membership Functions for Heading Angle Input}
 \end{figure}
 
 %OUTPUT SETS
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/HeadingControlOutput1.eps}
+\includegraphics[scale=\graphScale]{./figures/HeadingControlOutput1.eps}
 \caption{Membership Functions for Turn Command Output}
 \end{figure}
 
 \subsubsection{Rules}
 \begin{table}[H]
     \centering  
-    \caption{Fuzzy Logic Rules for Path Controller}
+    \caption{Sample of Fuzzy Logic Rules for Path Controller}
     \begin{tabu} to 0.8\textwidth { ? l | l ? l ? l ?}
         \Xhline{2\arrayrulewidth}
         $\psi_{ref}$   & $\psi$ &  \cellcolor{jamie} \textbf{TURN CMD} \\
@@ -178,6 +180,45 @@
         $S_{-ve}$ & $SE$ & \cellcolor{jamie} $R_{soft}$\\
         \hline
         $S_{-ve}$  & $S_{+ve}$ & \cellcolor{jamie} $FWD$\\
+
+        \hline 
+        $SW$ & $S_{-ve}$ & \cellcolor{jamie} $R_{soft}$\\
+        \hline
+        $SW$  & $SW$  &\cellcolor{jamie} $FWD$\\
+        \hline
+        $SW$ &  $W$ &\cellcolor{jamie} $L_{soft}$\\ 
+        \hline
+        $SW$ &  $NW$ &\cellcolor{jamie} $L_{hard}$\\
+        \hline
+        $SW$ & $N$ &\cellcolor{jamie} $L_{rot}$\\
+        \hline
+        $SW$ &  $NE$ &\cellcolor{jamie} $L_{rev}$\\
+        \hline
+        $SW$ & $E$ & \cellcolor{jamie} $R_{rot}$\\
+        \hline
+        $SW$ & $SE$ & \cellcolor{jamie} $R_{hard}$\\
+        \hline 
+        $SW$ & $S_{+ve}$ & \cellcolor{jamie} $R_{soft}$\\
+
+        \hline
+        $W$ & $S_{-ve}$  & \cellcolor{jamie} $R_{hard}$\\
+        \hline 
+        $W$ & $SW$ & \cellcolor{jamie} $R_{soft}$\\
+        \hline
+        $W$  &  $W$ &\cellcolor{jamie} $FWD$\\
+        \hline
+        $W$ &  $NW$ &\cellcolor{jamie} $L_{soft}$\\ 
+        \hline
+        $W$ &  $N$ &\cellcolor{jamie} $L_{hard}$\\
+        \hline
+        $W$ & $NE$ &\cellcolor{jamie} $L_{rot}$\\
+        \hline
+        $W$ &  $E$ &\cellcolor{jamie} $L_{rev}$\\
+        \hline
+        $W$ & $SE$ & \cellcolor{jamie} $R_{rot}$\\
+        \hline
+        $W$ & $S_{+ve}$ & \cellcolor{jamie} $R_{hard}$\\
+
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
@@ -194,19 +235,19 @@
 %turn command input the same as output from other controller
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/MotorControlInput2.eps}
+\includegraphics[scale=\graphScale]{./figures/MotorControlInput2.eps}
 \caption{Membership Functions for Radius Input}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/MotorControlInput3.eps}
+\includegraphics[scale=\graphScale]{./figures/MotorControlInput3.eps}
 \caption{Membership Functions for Wall Angle Input}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/MotorControlInput4.eps}
+\includegraphics[scale=\graphScale]{./figures/MotorControlInput4.eps}
 \caption{Membership Functions for Wall Proximity Input}
 \end{figure}
 
@@ -215,17 +256,68 @@
 %OUTPUTS
 \begin{figure}[H]
     \centering
-\includegraphics[scale=0.75]{./figures/MotorControlOutput1.eps}
+\includegraphics[scale=\graphScale]{./figures/MotorControlOutput1.eps}
 \caption{Membership Functions for Motor Gain Outputs}
 \end{figure}
 
 \begin{figure}
     \centering
-\includegraphics[scale=0.75]{./figures/MotorControlOutput3.eps}
+\includegraphics[scale=\graphScale]{./figures/MotorControlOutput3.eps}
 \caption{Membership Functions for Filter Cutoff Frequency Output}
 \end{figure}
 
 \subsubsection{Rules}
+%away from wall
+\begin{table}[H]
+    \centering  
+    \caption{Truth table of motor controller rules when outwidth the proximity of a wall}
+    \begin{tabu} to 0.8\textwidth { ? l | l | l | l | l ? l | l | l ?}
+        \Xhline{2\arrayrulewidth}
+        \textbf{TURN CMD}   & $r$ & $\Theta_{wall}$ &  $d_{wall}$ & $\bar{d}_{wall}$ &\cellcolor{jamie} $A_{left}$ & \cellcolor{jamie} $A_{right}$ & \cellcolor{jamie} $\omega_{cut}$\\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+        FWD  &  !VN & X&FAR &FAR &                              \cellcolor{jamie} FWD\textsubscript{soft} & \cellcolor{jamie} FWD\textsubscript{soft} & \cellcolor{jamie} AVG\\
+        \hline
+        L\textsubscript{soft} &!VN   &X& FAR&FAR &              \cellcolor{jamie} OFF &          \cellcolor{jamie}FWD \textsubscript{soft} & \cellcolor{jamie}AVG\\ 
+        \hline
+        L\textsubscript{hard} &!VN   &X& FAR&FAR &              \cellcolor{jamie} REV\textsubscript{soft} &          \cellcolor{jamie}FWD \textsubscript{hard} & \cellcolor{jamie}AVG\\ 
+        \hline
+        L\textsubscript{rot}& !VN &X& FAR&FAR &                 \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD \textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{rev} &  !VN &X& FAR&FAR &               \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{rev} & !VN &X& FAR& FAR&                \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{rot} & !VN & X& FAR&FAR &               \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline 
+        R\textsubscript{hard}& !VN&X& FAR&FAR &                 \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{soft}  & !VN &X& FAR& FAR&              \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}OFF&\cellcolor{jamie}AVG\\
+
+        \hline
+        FWD  &  VN & X&FAR &FAR &                               \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{soft} &VN   &X& FAR&FAR &               \cellcolor{jamie} REV\textsubscript{soft}&\cellcolor{jamie}FWD\textsubscript{soft}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{hard} &VN   &X& FAR&FAR &               \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{rot}& VN &X& FAR&FAR &                  \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        L\textsubscript{rev} &  VN &X& FAR&FAR &                \cellcolor{jamie} REV\textsubscript{hard}&\cellcolor{jamie}FWD\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{rev} & VN &X& FAR& FAR&                 \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{rot} & VN & X& FAR&FAR &                \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline 
+        R\textsubscript{hard}& VN&X& FAR&FAR &                  \cellcolor{jamie} FWD\textsubscript{hard}&\cellcolor{jamie}REV\textsubscript{hard}&\cellcolor{jamie}AVG\\
+        \hline
+        R\textsubscript{soft}  & VN &X& FAR& FAR&               \cellcolor{jamie} FWD\textsubscript{soft}&\cellcolor{jamie}REV\textsubscript{soft}&\cellcolor{jamie}AVG\\
+
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:IPfuncs}
+    \end{table}
 \subsubsection{Verification}
 
 \pagebreak
