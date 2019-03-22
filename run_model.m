@@ -19,13 +19,13 @@ clc;
 
 %----------------------------------------------%
 %simulation config
-sim_time = 25;
+sim_time = 15;
 fs = 20; %sampling rate
 fn = fs / 2; %nyquist 
 dT = 1 / fs;
 xi = zeros(1,24); % intial state for x
-xi(19) = -2; %starting x coordinate
-xi(20) = -1; %starting y coordinate
+xi(19) = -1; %starting x coordinate
+xi(20) = -4; %starting y coordinate
 LeftS = 0;
 RightS = 0;
 %----------------------------------------------%
@@ -95,8 +95,8 @@ targetY = 2.5
 xi(19) = 0
 xi(20) = -0;
 %xi(24) = pi/2;
-targetX = 2.5;
-targetY = -0;
+targetX = -1;
+targetY = -2;
 
 
 targetWaypoint = [targetX, targetY];
@@ -150,7 +150,9 @@ for outer_loop = 1:(sim_time/dT)
         sensorDelay = circshift(sensorDelay, 1);
         sensorDelay(1) = wallProximity;
         wallProximityFiltered = mean(sensorDelay);
-        %wallProximityFiltered = 1;
+
+        wallProximityFiltered = 1;
+        wallProximity = 1;
 
         %this controller takes a turn command from the heading controller
         % and determines the output motor voltages depending on whether or 

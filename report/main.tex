@@ -33,7 +33,15 @@
 \usepackage{fixltx2e}
 \usepackage{caption}
 \usepackage{subcaption}
+\usepackage{etoolbox}
 %\usepackage{pgflibraryarrows}
+
+\makeatletter
+\patchcmd{\@verbatim}
+  {\verbatim@font}
+  {\verbatim@font\small}
+  {}{}
+\makeatother
 
 %----------------TIKZ STYLES---------------%
 %\input{3-CommsIP/figs/ptpStyle.tikzstyles}
@@ -63,8 +71,8 @@
 %-----------GRAPHICS---------------%
 \graphicspath{{../figures/}}
 \input{control5.tikzstyles}
-\newcommand{\graphScale}{0.5}
-
+\newcommand{\graphScale}{0.4}
+\newcommand{\bigScale}{0.6}
 %-------TABLES----------%
 \newcolumntype{?}{!{\vrule width 1pt}}
 
@@ -119,8 +127,9 @@
 \begin{abstract}
     \addcontentsline{toc}{chapter}{Abstract}
     The following report outlines the development and testing of a waypoint following and obstacle avoidance system for the simulation of an autonomous robot in MATLAB.
-    The system presented uses fuzzy logic controllers to generate desired turning commands and motor gains, a range of different input types were used alongside basic signal processing techniques to provide the fuzzy controllers with sufficient insight into the surrounding environment.
-    The controller was found to produce successful results with the robot travelling to a specific coordinate with a 0.05m radius tolerance. 
+    The system presented uses fuzzy logic controllers to generate desired turning commands and motor gains. 
+    A range of different input types were used alongside basic signal processing techniques to provide the fuzzy controllers with sufficient insight into the surrounding environment.
+    The controller was found to produce successful results with the robot travelling to a specific coordinate within 0.05m. 
     Further development and fine-tuning was carried out to optimise the controller performance for a set of different scenarios.
     All code can be found on GitHub at \cite{github}, relevant code is included in the appendices.  
     \end{abstract}
@@ -128,10 +137,10 @@
 \section{Methodology}
 \subsection{Overview of System}
 Two cascaded fuzzy controllers are used, the first (path controller) determines a desired turn command based solely on the robot's current heading angle ($\psi$) and its angle relative to a desired waypoint ($\psi_{ref}$).
-The second controller takes the generated turn command and inputs relating to a nearby object ($d_{wall}$, $\bar{d}_{wall}$, $\Theta_{wall}$, $r$) to determine appropriate gains for the left and right motors.
-A variable lowpass FIR filter is used for each motor gain output to smooth the voltages, its cutoff frequency is controlled by one of the fuzzy motor controller's outputs.
+The second controller takes the generated turn command with inputs relating to a nearby object ($d_{wall}$, $\bar{d}_{wall}$, $\Theta_{wall}$, $r$) to determine appropriate gains for the left and right motors.
+A variable lowpass Finite Impulse Response (FIR) filter is used for each motor gain output to smooth the voltages, its cutoff frequency is controlled by one of the fuzzy motor controller outputs.
 A proportional drive voltage is applied to each motor that varies with the robot's distance from the waypoint, it remains constant until close to the waypoint. 
-A block diagram fof the system can be seen in figure \ref{fig:system}.
+A block diagram of the system can be seen in figure \ref{fig:system}.
 
 \begin{figure}[H]
     \centering
@@ -145,12 +154,12 @@ A block diagram fof the system can be seen in figure \ref{fig:system}.
 \subsection{Task 1: Waypoint Following}
 \subsubsection{Overview}
 The aim of this task is to guide the robot to a set waypoint without obstacle avoidance.
-This was achieved using fuzzy logic to evaluate a desired turn command by comparing the robot's current heading angle ($\psi$) with its angle relative to the waypoint ($\psi_{ref}$).
+This was achieved using fuzzy logic to generate a desired turn command by comparing the robot's current heading angle ($\psi$) with its angle relative to the waypoint ($\psi_{ref}$).
 The fuzzy logic is implemented to drive the error between both angles to zero such that the robot travels in the direction of the waypoint.
  
 \medskip
 A second fuzzy controller was created to control the gain applied to the motors, it takes the generated turn command and radius from the waypoint as inputs.
-As the robot approaches the waypoint, the rules are altered to enable coarser manoeuvres to allow it to stop within a 0.05m tolerance.
+As the robot approaches the waypoint, the rules are altered to enable coarser manoeuvres allowing it to stop within a 0.05m tolerance.
 A drive voltage is also proportionally reduced as the robot's position converges on the waypoint. 
 
 \subsubsection{Fuzzy Sets}
@@ -170,7 +179,7 @@ Trapezoidal membership functions were used for fuzzification, they can be seen f
 The path controller output variable is a turning command with the derived set, 
 \{L\textsubscript{rev}, L\textsubscript{rot}, L\textsubscript{hard}, L\textsubscript{soft}, FWD, R\textsubscript{soft}, R\textsubscript{hard}, R\textsubscript{rot}, R\textsubscript{rev}\},
 for reverse, rotate, hard, soft and forward manoeuvres respectively. 
-These commands allow for a variety of coarse or fine turning adjustments to be made by the motor controller, trapezoidal membership were used for the fuzzification and can be seen in figure \ref{fig:commandSets}
+These commands allow for a variety of coarse or fine turning adjustments to be made by the motor controller, trapezoidal membership functions were used for the fuzzification and can be seen in figure \ref{fig:commandSets}
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/HeadingControlOutput1.eps}
@@ -208,7 +217,8 @@ Triangular membership functions are used and can be seen in figure \ref{fig:moto
 The path controller will produce a turning command that is appropriate for the robot's heading in relation to the its reference angle to the waypoint.
 For example: \textbf{IF} the robot is facing north ($\psi$=N) \textbf{AND} its bearing is north east ($\psi_{ref}$=NE), \textbf{THEN} turn soft right (R\textsubscript{soft}).
 In this situation only a soft right turn is required as angles in north and north-east are likely to be close together, a harder manoeuvre is more likely to result in an undesired overshoot.
-Rules were derived for each combination of headings and reference angles, a sample of the 81 rules can be seen in table \ref{table:cmdRules} for heading of south-positive and south-west.
+Rules were derived for each combination of headings and reference angles, a sample of the 81 rules can be seen in table \ref{table:cmdRules} for a heading angle of south-positive.
+The defuzzification method used was the bisector method.
 The entire set of rules are included in appendix ???????????????????.
 
 \begin{table}[H]
@@ -244,9 +254,10 @@ The entire set of rules are included in appendix ???????????????????.
 \end{table}
 
 The motor controller interprets these turn commands by applying appropriate gains to the left and right motors such that robot executes the requested turning manoeuvre.
-For example: \textbf{IF} the requested manoeuvre is a soft-right turn (TURN CMD = R\textsubscript{soft}) \textbf{AND} the robot is not very-near to the waypoint ($r$!=VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is OFF.
+For example: \textbf{IF} the requested manoeuvre is a soft-right turn (TURN CMD = R\textsubscript{soft}) \textbf{AND} the robot is not very-near to the waypoint ($r$ != VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is OFF.
 If the robot is very-near to the waypoint then it will only execute rotational manoeuvres, for example:
-\textbf{IF} the requested manoeuvre is a soft-right turn \textbf{AND} the robot is very-near ($r$=VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is REV\textsubscript{soft}.
+\textbf{IF} the requested manoeuvre is a soft-right turn \textbf{AND} the robot is very-near ($r$ = VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is REV\textsubscript{soft}.
+
 These rules can be seen in table \ref{table:motorOut1}
 
 \begin{table}[H]
@@ -301,7 +312,39 @@ These rules can be seen in table \ref{table:motorOut1}
     \end{table}
 
 \subsubsection{Verification}
+The path controller was tested using the waypoints specified in the assignment brief (task 1). 
+The results shown in table \ref{table:task1} demonstrate that the testing was successful as the robot stopped at a point within 0.05m of the waypoint in each scenario.
+An example plot of the robot's path from the origin to (-0.2, 2) is shown in figure \ref{fig:task1}.
 
+\begin{table}[H]
+    \centering  
+    \caption{Start and end coordinates for task 1}
+    \begin{tabu} to 0.8\textwidth { ? l | l ?}
+        \Xhline{2\arrayrulewidth}
+        \textbf{Start Coordinate}  &  \textbf{End Coordinate}\\
+        %\hhline{|=|=||=|}
+        \Xhline{2\arrayrulewidth}
+        (0, 3) & (-0.043, 3.0246) \\
+        \hline
+        (1, 2) & (0.9949, 2.0463) \\
+        \hline
+        (-1, 4) & (-1.0409, 4.0230) \\
+        \hline
+        (-1, 2) & (-1.0448, -1.9871) \\
+        \hline
+        (0, 3) & (-0.2391, 2.0056) \\
+        \Xhline{2\arrayrulewidth}
+    \end{tabu}
+    
+    \label{table:task1}
+    \end{table}
+
+    \begin{figure}[H]
+        \centering
+    \includegraphics[scale=\graphScale]{./figures/task1_x0point2y2.eps}
+    \caption{Path of robot from the origin to (-0.2, 2)}
+    \label{fig:task1}
+    \end{figure}
 
 \subsection{Task 2: Obstacle Avoidance}
 
@@ -534,10 +577,10 @@ When the filtered proximity input is enabled (\ref{fig:filtSub2}), the path as t
     \begin{subfigure}{.5\textwidth}
       \centering
       \includegraphics[scale=0.4]{./figures/SharpTurn_withFilt.eps}
-      \caption{Robot path with filtered proximity input}
+      \caption{Filtered proximity input rules applied}
       \label{fig:filtSub2}
     \end{subfigure}
-    \caption{Filtered proximity input rules applied}
+    \caption{Robot path with filtered proximity input}
     \label{fig:wallFilter}
     \end{figure}
 
@@ -587,7 +630,111 @@ This could be achieved by adding more rules or members to the motor gain output 
 \pagebreak
 \section{FIRFilter Class}
 \lstinputlisting[language = matlab]{../FIRFilter.m}
+
+\pagebreak
 \section{Lab 1 Answer Sheet}
 
+
+\pagebreak
+\section{Task 1 Plots}
+\centering
+\includegraphics[scale=\bigScale]{./figures/task1_x0_y3.eps}
+
+\includegraphics[scale=\bigScale]{./figures/task1_x1y2.eps}
+
+\includegraphics[scale=\bigScale]{./figures/task1_x-1y4.eps}
+
+\includegraphics[scale=\bigScale]{./figures/task1_x-1y-2.eps}
+
+\includegraphics[scale=\bigScale]{./figures/task1_x0point2y2.eps}
+
+
+
+
+
+\section{Path Controller Rules}
+\begin{verbatim}
+'1. If (psi_{ref} is S_{-ve}) and (psi is S_{-ve}) then (TurnCommand is FWD) (1) '
+    '2. If (psi_{ref} is S_{-ve}) and (psi is SW) then (TurnCommand is L_{soft}) (1) '
+    '3. If (psi_{ref} is S_{-ve}) and (psi is W) then (TurnCommand is L_{hard}) (1)  '
+    '4. If (psi_{ref} is S_{-ve}) and (psi is NW) then (TurnCommand is L_{rot}) (1)  '
+    '5. If (psi_{ref} is S_{-ve}) and (psi is N) then (TurnCommand is L_{rev}) (1)   '
+    '6. If (psi_{ref} is S_{-ve}) and (psi is NE) then (TurnCommand is R_{rot}) (1)  '
+    '7. If (psi_{ref} is S_{-ve}) and (psi is E) then (TurnCommand is R_{hard}) (1)  '
+    '8. If (psi_{ref} is S_{-ve}) and (psi is SE) then (TurnCommand is R_{soft}) (1) '
+    '9. If (psi_{ref} is S_{-ve}) and (psi is S_{+ve}) then (TurnCommand is FWD) (1) '
+    '10. If (psi_{ref} is SW) and (psi is S_{-ve}) then (TurnCommand is R_{soft}) (1)'
+    '11. If (psi_{ref} is SW) and (psi is SW) then (TurnCommand is FWD) (1)          '
+    '12. If (psi_{ref} is SW) and (psi is W) then (TurnCommand is L_{soft}) (1)      '
+    '13. If (psi_{ref} is SW) and (psi is NW) then (TurnCommand is L_{hard}) (1)     '
+    '14. If (psi_{ref} is SW) and (psi is N) then (TurnCommand is L_{rot}) (1)       '
+    '15. If (psi_{ref} is SW) and (psi is NE) then (TurnCommand is L_{rev}) (1)      '
+    '16. If (psi_{ref} is SW) and (psi is E) then (TurnCommand is R_{rot}) (1)       '
+    '17. If (psi_{ref} is SW) and (psi is SE) then (TurnCommand is R_{hard}) (1)     '
+    '18. If (psi_{ref} is SW) and (psi is S_{+ve}) then (TurnCommand is R_{soft}) (1)'
+    '19. If (psi_{ref} is W) and (psi is S_{-ve}) then (TurnCommand is R_{hard}) (1) '
+    '20. If (psi_{ref} is W) and (psi is SW) then (TurnCommand is R_{soft}) (1)      '
+    '21. If (psi_{ref} is W) and (psi is W) then (TurnCommand is FWD) (1)            '
+    '22. If (psi_{ref} is W) and (psi is NW) then (TurnCommand is L_{soft}) (1)      '
+    '23. If (psi_{ref} is W) and (psi is N) then (TurnCommand is L_{hard}) (1)       '
+    '24. If (psi_{ref} is W) and (psi is NE) then (TurnCommand is L_{rot}) (1)       '
+    '25. If (psi_{ref} is W) and (psi is E) then (TurnCommand is L_{rev}) (1)        '
+    '26. If (psi_{ref} is W) and (psi is SE) then (TurnCommand is R_{rot}) (1)       '
+    '27. If (psi_{ref} is W) and (psi is S_{+ve}) then (TurnCommand is R_{hard}) (1) '
+    '28. If (psi_{ref} is NW) and (psi is S_{-ve}) then (TurnCommand is R_{rot}) (1) '
+    '29. If (psi_{ref} is NW) and (psi is SW) then (TurnCommand is R_{hard}) (1)     '
+    '30. If (psi_{ref} is NW) and (psi is W) then (TurnCommand is R_{soft}) (1)      '
+    '31. If (psi_{ref} is NW) and (psi is NW) then (TurnCommand is FWD) (1)          '
+    '32. If (psi_{ref} is NW) and (psi is N) then (TurnCommand is L_{soft}) (1)      '
+    '33. If (psi_{ref} is NW) and (psi is NE) then (TurnCommand is L_{hard}) (1)     '
+    '34. If (psi_{ref} is NW) and (psi is E) then (TurnCommand is L_{rot}) (1)       '
+    '35. If (psi_{ref} is NW) and (psi is SE) then (TurnCommand is L_{rev}) (1)      '
+    '36. If (psi_{ref} is NW) and (psi is S_{+ve}) then (TurnCommand is R_{rot}) (1) '
+    '37. If (psi_{ref} is N) and (psi is S_{-ve}) then (TurnCommand is L_{rev}) (1)  '
+    '38. If (psi_{ref} is N) and (psi is SW) then (TurnCommand is R_{rot}) (1)       '
+    '39. If (psi_{ref} is N) and (psi is W) then (TurnCommand is R_{hard}) (1)       '
+    '40. If (psi_{ref} is N) and (psi is NW) then (TurnCommand is R_{soft}) (1)      '
+    '41. If (psi_{ref} is N) and (psi is N) then (TurnCommand is FWD) (1)            '
+    '42. If (psi_{ref} is N) and (psi is NE) then (TurnCommand is L_{soft}) (1)      '
+    '43. If (psi_{ref} is N) and (psi is E) then (TurnCommand is L_{hard}) (1)       '
+    '44. If (psi_{ref} is N) and (psi is SE) then (TurnCommand is L_{rot}) (1)       '
+    '45. If (psi_{ref} is N) and (psi is S_{+ve}) then (TurnCommand is L_{rev}) (1)  '
+    '46. If (psi_{ref} is NE) and (psi is S_{-ve}) then (TurnCommand is L_{rot}) (1) '
+    '47. If (psi_{ref} is NE) and (psi is SW) then (TurnCommand is L_{rev}) (1)      '
+    '48. If (psi_{ref} is NE) and (psi is W) then (TurnCommand is R_{rot}) (1)       '
+    '49. If (psi_{ref} is NE) and (psi is NW) then (TurnCommand is R_{hard}) (1)     '
+    '50. If (psi_{ref} is NE) and (psi is N) then (TurnCommand is R_{soft}) (1)      '
+    '51. If (psi_{ref} is NE) and (psi is NE) then (TurnCommand is FWD) (1)          '
+    '52. If (psi_{ref} is NE) and (psi is E) then (TurnCommand is L_{soft}) (1)      '
+    '53. If (psi_{ref} is NE) and (psi is SE) then (TurnCommand is L_{hard}) (1)     '
+    '54. If (psi_{ref} is NE) and (psi is S_{+ve}) then (TurnCommand is L_{rot}) (1) '
+    '55. If (psi_{ref} is E) and (psi is S_{-ve}) then (TurnCommand is L_{hard}) (1) '
+    '56. If (psi_{ref} is E) and (psi is SW) then (TurnCommand is L_{rot}) (1)       '
+    '57. If (psi_{ref} is E) and (psi is W) then (TurnCommand is L_{rev}) (1)        '
+    '58. If (psi_{ref} is E) and (psi is NW) then (TurnCommand is R_{rot}) (1)       '
+    '59. If (psi_{ref} is E) and (psi is N) then (TurnCommand is R_{hard}) (1)       '
+    '60. If (psi_{ref} is E) and (psi is NE) then (TurnCommand is R_{soft}) (1)      '
+    '61. If (psi_{ref} is E) and (psi is E) then (TurnCommand is FWD) (1)            '
+    '62. If (psi_{ref} is E) and (psi is SE) then (TurnCommand is L_{soft}) (1)      '
+    '63. If (psi_{ref} is E) and (psi is S_{+ve}) then (TurnCommand is L_{hard}) (1) '
+    '64. If (psi_{ref} is SE) and (psi is S_{-ve}) then (TurnCommand is L_{soft}) (1)'
+    '65. If (psi_{ref} is SE) and (psi is SW) then (TurnCommand is L_{hard}) (1)     '
+    '66. If (psi_{ref} is SE) and (psi is W) then (TurnCommand is L_{rot}) (1)       '
+    '67. If (psi_{ref} is SE) and (psi is NW) then (TurnCommand is L_{rev}) (1)      '
+    '68. If (psi_{ref} is SE) and (psi is N) then (TurnCommand is R_{rot}) (1)       '
+    '69. If (psi_{ref} is SE) and (psi is NE) then (TurnCommand is R_{hard}) (1)     '
+    '70. If (psi_{ref} is SE) and (psi is E) then (TurnCommand is R_{soft}) (1)      '
+    '71. If (psi_{ref} is SE) and (psi is SE) then (TurnCommand is FWD) (1)          '
+    '72. If (psi_{ref} is SE) and (psi is S_{+ve}) then (TurnCommand is L_{soft}) (1)'
+    '73. If (psi_{ref} is S_{+ve}) and (psi is S_{-ve}) then (TurnCommand is FWD) (1)'
+    '74. If (psi_{ref} is S_{+ve}) and (psi is SW) then (TurnCommand is L_{soft}) (1)'
+    '75. If (psi_{ref} is S_{+ve}) and (psi is W) then (TurnCommand is L_{hard}) (1) '
+    '76. If (psi_{ref} is S_{+ve}) and (psi is NW) then (TurnCommand is L_{rot}) (1) '
+    '77. If (psi_{ref} is S_{+ve}) and (psi is N) then (TurnCommand is L_{rev}) (1)  '
+    '78. If (psi_{ref} is S_{+ve}) and (psi is NE) then (TurnCommand is R_{rot}) (1) '
+    '79. If (psi_{ref} is S_{+ve}) and (psi is E) then (TurnCommand is R_{hard}) (1) '
+    '80. If (psi_{ref} is S_{+ve}) and (psi is SE) then (TurnCommand is R_{soft}) (1)'
+    '81. If (psi_{ref} is S_{+ve}) and (psi is S_{+ve}) then (TurnCommand is FWD) (1)'
+\end{verbatim}
 
 \end{document}
