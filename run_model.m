@@ -19,7 +19,7 @@ clc;
 
 %----------------------------------------------%
 %simulation config
-sim_time = 15;
+sim_time = 10;
 fs = 20; %sampling rate
 fn = fs / 2; %nyquist 
 dT = 1 / fs;
@@ -86,6 +86,7 @@ sensorDelay = zeros(1, fs*2); %simple moving average buffer for wall proximity
 ObjectAvoider = readfis('ObjectAvoider.fis');
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
+FuzzyController = readfis('FuzzyController.fis');
 
 targetX = 3.5;
 targetY = 2.5
@@ -202,6 +203,7 @@ for outer_loop = 1:(sim_time/dT)
 
     end;
     
+
     %apply calculated output voltages to motors
     Va = [Vl/2; Vl/2; Vr/2; Vr/2];
     [xdot, xi] = full_mdl_motors(Va,xi,0,0,0,0,dT);  
@@ -243,22 +245,22 @@ disp(xi(20));
 %PLOTS
 
 figure(2); 
-plot(xio(:,19));
+plot(time, xio(:,19));
 title('Y Distance Travelled');
-xlabel('Timesteps');
+xlabel('Time (s)');
 ylabel('Distance (m)');
 
 figure(3); 
-plot(xio(:,20));
+plot(time, xio(:,20));
 title('X Distance Travelled');
-xlabel('Timesteps');
+xlabel('Time (s)');
 ylabel('Distance (m)');
 
 figure(4); 
-plot(xio(:,24));
+plot(time, xio(:,24));
 title('PSI Angle');
-xlabel('Angle (rads)');
-ylabel('Time (s)');
+ylabel('Angle (rads)');
+xlabel('Time (s)');
 
 figure(5);
 plot(xio(:,20),xio(:,19));
@@ -267,7 +269,7 @@ xlabel('Horizontal Distance (m)');
 ylabel('Vertical Distance (m)');
 
 figure(6);
-plot(VlResults(:,1));
+plot(time, VlResults(:,1));
 title('Right Motor Voltage');
 xlabel('Time (s)');
 ylabel('Voltage (V)');
