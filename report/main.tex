@@ -1,6 +1,6 @@
 
 %------------DOC TYPE-------------------%
-\documentclass[11pt]{article}
+\documentclass[10pt]{article}
 
 %-----------INCLUDES----------------------%
 \usepackage[english]{babel}
@@ -125,8 +125,6 @@
     All code can be found on GitHub at \cite{github}, relevant code is included in the appendices.  
     \end{abstract}
 
-\section{Introduction}
-
 \section{Methodology}
 \subsection{Overview of System}
 Two cascaded fuzzy controllers are used, the first (path controller) determines a desired turn command based solely on the robot's current heading angle ($\psi$) and its angle relative to a desired waypoint ($\psi_{ref}$).
@@ -239,25 +237,6 @@ The entire set of rules are included in appendix ???????????????????.
         \hline
         S\textsubscript{-ve}   & S\textsubscript{+ve}  & \cellcolor{jamie} FWD\\
 
-        \hline 
-        SW & S\textsubscript{-ve}  & \cellcolor{jamie} R\textsubscript{soft}\\
-        \hline
-        SW  & SW  &\cellcolor{jamie} FWD\\
-        \hline
-        SW &  W &\cellcolor{jamie} L\textsubscript{soft}\\ 
-        \hline
-        SW &  NW &\cellcolor{jamie} L\textsubscript{hard}\\
-        \hline
-        SW& N &\cellcolor{jamie} L\textsubscript{rot}\\
-        \hline
-        SW&  NE &\cellcolor{jamie} L\textsubscript{rev}\\
-        \hline
-        SW& E & \cellcolor{jamie} R\textsubscript{rot}\\
-        \hline
-        SW & SE & \cellcolor{jamie} R\textsubscript{hard}\\
-        \hline 
-        SW& S\textsubscript{+ve} & \cellcolor{jamie} R\textsubscript{soft}\\
-
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
@@ -327,36 +306,75 @@ These rules can be seen in table \ref{table:motorOut1}
 \subsection{Task 2: Obstacle Avoidance}
 
 \subsubsection{Overview}
+The aim of this task is to guide the robot to a set waypoint as before, however doing so while avoiding obstacles.
+This was achieved using additional inputs from distance sensors to the motor controller such that the robot could execute evasive manoeuvres when in the proximity of a wall.
+The fuzzy logic is implemented in such a way as to drive the error between the heading and reference angles to zero (as in task one) when outwith the proximity of a wall however, different evasion commands would be executed as required when near a wall.
+
 \subsubsection{Fuzzy Sets}
 %INPUTS
-%turn command input the same as output from other controller
+The angle at which the robot approaches an obstacle ($\Theta_{wall}$) is an input to the motor controller and is calculated in the main code using the following equation:
+$\Theta = arctan\bigg(\frac{d_{left}-d_{right}}{\Delta x}\bigg)$,
+where $d_{left}$, $d_{right}$ and $\Delta x$ are the left sensor distance, right sensor distance and distance between the sensors respectively.
+As the maximum output from a sensor is 1 and the distance between the sensors is 0.2, the maximum detectable wall angle/slope is 1.3734 and therefore the range of the fuzzy input set is $\pm$1.3734.
+The derived set is as follows, \{-ve\textsubscript{hard}, -ve\textsubscript{soft}, FLAT, +ve\textsubscript{soft}, +ve\textsubscript{hard}\}, where each member represents a slope gradient.
 
-
+\medskip
+For example, -ve\textsubscript{hard} refers to a steep negative gradient relative to the direction that the robot is facing the wall.
+This set uses trapezoidal membership functions for all but the FLAT member, it was found that the controller performed best when limiting the FLAT member to a small range with a triangular function as otherwise it would become indecisive when approaching the wall at a slight angle in certain scenarios. 
+These can be seen in figure \ref{fig:wallSlope}.
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/MotorControlInput3.eps}
 \caption{Membership Functions for Wall Angle Input}
+\label{fig:wallSlope}
 \end{figure}
+
+The proximity to the wall is determined as the smaller of either distances detected by the left or right sensors and is an input with the following set, \{CLOSE, NEAR, FAR\} with trapezoidal membership functions that can be seen in figure \ref{fig:wallProx}.
+Since the sensor returns one when an obstacle is not detected, any input greater than this is definitively a FAR value of proximity as this allows the controller logic to function reliably when detecting a wall. 
+The controller is designed to guide the robot alongside the wall until it reaches its corner, at which point it can continue towards the waypoint as normal.
 
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/MotorControlInput4.eps}
 \caption{Membership Functions for Wall Proximity Input}
+\label{fig:wallProx}
 \end{figure}
 
-%filtered proximity functions the same as unfiltered
+In certain situations the robot will begin tracking along a wall with the waypoint initially directly on the other side. 
+As it moves along the wall, the difference between the heading and reference angles begins to increase and therefore, the requested turning command will become more aggressive. 
+This becomes a problem when the robot is in parallel with the wall as its sensors return a value of one and thus the robot acts as though it is FAR from the wall.
+In this situation, when the turning command is aggressive, the robot will jolt towards the wall as soon as it becomes parallel. 
+
+\medskip
+To rectify this, it was necessary to provide the controller with an input that could indicate whether or not the robot had cleared a wall while tracking along it. 
+This was achieved by taking a 20 sample moving average (mean) of the wall proximity and providing this as an additional input ($\bar{d}_{wall}$), the robot could be assumed to have cleared a wall only when both the filtered and unfiltered proximity values are one.
+The fuzzy set and membership functions are identical to that of the unfiltered proximity seen in figure \ref{fig:wallProx}.
+
+\medskip
+A variable, Finite Impulse Response (FIR) lowpass filter was applied to smooth the output voltages.
+This was achieved by writing and using a sample by sample FIR filter class, this can be seen in appendix ?????????.
+Its cutoff frequency is an output of the motor controller such that the motor responsiveness could be adjusted dynamically in certain scenarios, its set is as follows, \{SLOW, AVG, FAST\}.
+Trapezoidal membership function are used and can be seen in figure \ref{fig:filterOut}, its total range is from 0 to 1 as the filter is normalised to the nyquist frequency. 
 
 %OUTPUTS
 
 
-\begin{figure}
+\begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/MotorControlOutput3.eps}
 \caption{Membership Functions for Filter Cutoff Frequency Output}
+\label{fig:filterOut}
 \end{figure}
 
 \subsubsection{Rules}
-%away from wall
+When the robot is far from a wall and has cleared it in the situation that it was tracking alongside one, then it applies the same turn command that of task one in table \ref{table:cmdRules}.
+When in proximity of a wall, an appropriate manoeuvre is executed to alter the robot such that it is in parallel with the wall depending on the wall angle relative to the robots heading. 
+For example, \textbf{IF} the robot is facing the wall with a steep positive gradient ($\Theta_{wall}$ = +ve\textsubscript{hard}) \textbf{AND} the robot is NEAR to the wall, \textbf{THEN} $A_{left}$ is FWD\textsubscript{hard} \textbf{AND} $A_{right}$ is FWD\textsubscript{soft}.
+In this scenario, the robot is close to parallel to the wall so only a gentle right turn is required.
+In situations where the robot approaches the wall at a flat angle, the robot will turn left or right depending on the current turn command requested by the path controller, if the turn command requested is forward the robot will turn right by default.
+This can be seen in table \ref{table:wallProxRules}. 
+
+\begin{comment}
 \begin{table}[H]
     \centering  
     \caption{Truth table of motor controller rules when outwidth the proximity of a wall}
@@ -407,6 +425,7 @@ These rules can be seen in table \ref{table:motorOut1}
     
     \label{table:IPfuncs}
     \end{table}
+\end{comment}
 
 %wall avoidance
 \begin{table}[H]
@@ -447,10 +466,15 @@ These rules can be seen in table \ref{table:motorOut1}
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
-    \label{table:IPfuncs}
+    \label{table:wallProxRules}
     \end{table}
 
 %with filtered inputs (wall hugging)
+When tracking along a wall, if the robot is parallel and the waypoint resides an the other side of it, the motor controller will execute a soft turning command towards the wall.
+This prevents the the robot jolting towards the wall when an aggressive turning command is requested by the path controller as described previously.
+The logic is implemented such that these rules are enabled when the unfiltered wall proximity is FAR but the unfiltered proximity is not, i.e. the robot is parallel and therefore still tracking along the wall.
+This can be seen in figure \ref{table:parMotorRules}.
+
 \begin{table}[H]
     \centering  
     \caption{Truth table of motor controller rules when approximately parallel to wall}
@@ -471,39 +495,53 @@ These rules can be seen in table \ref{table:motorOut1}
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
-    \label{table:IPfuncs}
+    \label{table:parMotorRules}
     \end{table}
 
 
 
 \section{Results and Testing}
 \subsubsection{Assigned Waypoint}
+The following plot (figure \ref{fig:ToWaypoint}) shows the robot's path towards the waypoint specified in the assignment brief (3.5, 2.5).
+The robot was successful in reaching the waypoint within a 0.05m tolerance, finishing at the coordinate (3.5342, 2.5302).
+A subtle avoidance manoeuvre is executed as it reaches the wall at (1.2, -1), the robot tracks alongside the wall until it has cleared it at (1.2, 1) at which it point it turns left towards the waypoint.
+As its position converges on that of the waypoint, a left rotation is executed demonstrating the successful execution of rules to be enabled when very-near to the waypoint. 
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/ToWaypoint.eps}
 \caption{Robot path to waypoint (3.5, 2.5) from starting point (-2, -1)}
+\label{fig:ToWaypoint}
 \end{figure}
 
 
 \subsubsection{Wall Tracking}
 %average filter
+In order to test the robot's ability to detect whether or not it was in parallel to a wall, the following test scenario was devised.
+The robot is initially directly facing a wall, the waypoint is placed directly opposite the robot on the other side of the wall.
+The controller will guide the robot around the wall to the right, when the filtered proximity input is enabled the robot should track along the wall smoothly and when disabled, it should track in a jagged fashion.
+This input was disabled by setting it as one, ensuring that the relevant rules would never fire. 
+The results can be seen in figure \ref{fig:wallFilter}.
+When the filtered proximity input is enabled (\ref{fig:filtSub2}), the path as the robot tracks along the wall is much smoother than when disabled (\ref{fig:filtSub1}).
+
 \begin{figure}[H]
     \centering
     \begin{subfigure}{.5\textwidth}
       \centering
       \includegraphics[scale=0.4]{./figures/SharpTurn_noFilt.eps}
       \caption{No filtered proximity input rules applied}
-      \label{fig:sub1}
+      \label{fig:filtSub1}
     \end{subfigure}%
     \begin{subfigure}{.5\textwidth}
       \centering
       \includegraphics[scale=0.4]{./figures/SharpTurn_withFilt.eps}
       \caption{Robot path with filtered proximity input}
-      \label{fig:sub2}
+      \label{fig:filtSub2}
     \end{subfigure}
     \caption{Filtered proximity input rules applied}
     \label{fig:wallFilter}
     \end{figure}
+
+\begin{comment}
 \subsubsection{Perpendicular Approach}
 %jolting, reducing flat member func
 %filter
@@ -518,11 +556,24 @@ These rules can be seen in table \ref{table:motorOut1}
 \includegraphics[scale=\graphScale]{./figures/PerpRotVel.eps}
 \caption{Rotational velocity when avoiding a perpendicular wall}
 \end{figure}
+\end{comment}
 
+\section{Further Work}
+More rules need to be developed for waypoints residing close to a wall, the requested turn command will be ignored in such a scenario.
+As the robot converges on the waypoint, it will come into proximity of the wall and the coarser turn commands, to be enabled when very-near to the waypoint, will not be fired resulting in the robot being unable to reach the point.
+This could be rectified by adding further logic to account for the robot being near a wall AND the waypoint. 
 
-\section{Discussion}
-\subsection{Evaluation}
-\subsection{Further Work}
+\medskip
+Simplifications could have been made to the logic to reduce unused or rarely used variables and members. 
+The path controller's logic could have been simplified by calculating the error between the heading and reference angles and using this as a single fuzzy set, this would have resulted in only 9 rules rather than 81. 
+The lowpass filter cutoff frequency is also rarely altered with the exception of the robot approaching a wall perpendicularly in which which it is increased to allow for a faster turning response.
+More investigation should be done into how this output could be better utilised. 
+
+\medskip
+More fine-tuning to the motor controller rules could be carried out, particularly to those fired when close to the waypoint.
+As can be seen in figure \ref{fig:ToWaypoint}, the robot stops abruptly next to the waypoint before rotating and approaching from a very small distance.
+Ideally the trajectory as the robot approaches would be smoother and more gradual.
+This could be achieved by adding more rules or members to the motor gain output set, increasing the potential resolution of the output voltages.  
 %unused variables (velocity, rotational velocity)
 
 \pagebreak
