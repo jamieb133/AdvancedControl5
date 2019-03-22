@@ -52,8 +52,8 @@
 %---------------PAGE STYLE/HEADER-FOOTER-------------------%
 \pagestyle{fancy}% Change page style to fancy
 \fancyhf{}% Clear header/footer
-\fancyhead[R]{2127147b}
-%\fancyhead[L]{}
+\fancyhead[L]{2127147b}
+\fancyhead[R]{Advanced Control 5: Lab Assignment}
 \fancyfoot[R]{\thepage}% \fancyfoot[R]{\thepage}
 \renewcommand{\headrulewidth}{0.5pt}
 \renewcommand{\footrulewidth}{0.5pt}
@@ -132,7 +132,7 @@
     A range of different input types were used alongside basic signal processing techniques to provide the fuzzy controllers with sufficient insight into the surrounding environment.
     The controller was found to produce successful results with the robot travelling to a specific coordinate within 0.05m. 
     Further development and fine-tuning was carried out to optimise the controller performance for a set of different scenarios.
-    All code can be found on GitHub at \cite{github}, relevant code is included in the appendices.  
+    All code can be found on GitHub at \textit{https://github.com/jamieb133/AdvancedControl5}, relevant code is included in the appendices.  
     \end{abstract}
 
 \section{Methodology}
@@ -202,7 +202,7 @@ Trapezoidal membership functions are used and can be seen in figure \ref{fig:rad
 \end{figure}
 
 The motor controller produces gains for the motors as outputs in the range of -1 to 1 with the derived set, \{REV\textsubscript{hard}, REV\textsubscript{soft}, OFF, FWD\textsubscript{soft}, FWD\textsubscript{hard}\},
-representing hard-reverse, soft-reverse, off, soft-forward and hard-forward manoeuvres repectively. 
+representing hard-reverse, soft-reverse, off, soft-forward and hard-forward manoeuvres respectively. 
 These gains are scaled in the main code to an appropriate range and limited to the maximum range of $\pm$7.4V. 
 Triangular membership functions are used and can be seen in figure \ref{fig:motorSets}.
 
@@ -216,11 +216,11 @@ Triangular membership functions are used and can be seen in figure \ref{fig:moto
 
 \subsubsection{Rules}
 The path controller will produce a turning command that is appropriate for the robot's heading in relation to the its reference angle to the waypoint.
-For example: \textbf{IF} the robot is facing north ($\psi$=N) \textbf{AND} its bearing is north east ($\psi_{ref}$=NE), \textbf{THEN} turn soft right (R\textsubscript{soft}).
+For example: \textbf{IF} the robot is facing north ($\psi$ = N) \textbf{AND} its bearing is north east ($\psi_{ref}$ = NE), \textbf{THEN} turn soft-right (R\textsubscript{soft}).
 In this situation only a soft right turn is required as angles in north and north-east are likely to be close together, a harder manoeuvre is more likely to result in an undesired overshoot.
-Rules were derived for each combination of headings and reference angles, a sample of the 81 rules can be seen in table \ref{table:cmdRules} for a heading angle of south-positive.
+Rules were derived for each combination of headings and reference angles, a sample of the 81 rules can be seen in table \ref{table:cmdRules} for a heading angle of south-negative.
 The defuzzification method used was the bisector method.
-The entire set of rules are included in appendix ???????????????????.
+The entire set of rules is included in appendix E.
 
 \begin{table}[H]
     \centering  
@@ -258,7 +258,6 @@ The motor controller interprets these turn commands by applying appropriate gain
 For example: \textbf{IF} the requested manoeuvre is a soft-right turn (TURN CMD = R\textsubscript{soft}) \textbf{AND} the robot is not very-near to the waypoint ($r$ != VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is OFF.
 If the robot is very-near to the waypoint then it will only execute rotational manoeuvres, for example:
 \textbf{IF} the requested manoeuvre is a soft-right turn \textbf{AND} the robot is very-near ($r$ = VN), \textbf{THEN} $A_{left}$ is FWD\textsubscript{soft} \textbf{AND} $A_{left}$ is REV\textsubscript{soft}.
-
 These rules can be seen in table \ref{table:motorOut1}
 
 \begin{table}[H]
@@ -315,14 +314,14 @@ These rules can be seen in table \ref{table:motorOut1}
 \subsubsection{Verification}
 The path controller was tested using the waypoints specified in the assignment brief (task 1). 
 The results shown in table \ref{table:task1} demonstrate that the testing was successful as the robot stopped at a point within 0.05m of the waypoint in each scenario.
-An example plot of the robot's path from the origin to (-0.2, 2) is shown in figure \ref{fig:task1}.
+An example plot of the robot's path from the origin to (-0.2, 2) is shown in figure \ref{fig:task1}, all plots for each assigned coordinate can be seen in appendix D.
 
 \begin{table}[H]
     \centering  
-    \caption{Start and end coordinates for task 1}
+    \caption{Assigned waypoints and  actual final coordinates for task 1}
     \begin{tabu} to 0.8\textwidth { ? l | l ?}
         \Xhline{2\arrayrulewidth}
-        \textbf{Start Coordinate}  &  \textbf{End Coordinate}\\
+        \textbf{Waypoint}  &  \textbf{Actual Final Coordinate}\\
         %\hhline{|=|=||=|}
         \Xhline{2\arrayrulewidth}
         (0, 3) & (-0.043, 3.0246) \\
@@ -333,7 +332,7 @@ An example plot of the robot's path from the origin to (-0.2, 2) is shown in fig
         \hline
         (-1, 2) & (-1.0448, -1.9871) \\
         \hline
-        (0, 3) & (-0.2391, 2.0056) \\
+        (-0.2, 2) & (-0.2391, 2.0056) \\
         \Xhline{2\arrayrulewidth}
     \end{tabu}
     
@@ -351,18 +350,19 @@ An example plot of the robot's path from the origin to (-0.2, 2) is shown in fig
 
 \subsubsection{Overview}
 The aim of this task is to guide the robot to a set waypoint as before, however doing so while avoiding obstacles.
-This was achieved using additional inputs from distance sensors to the motor controller such that the robot could execute evasive manoeuvres when in the proximity of a wall.
+This was achieved using additional inputs from distance sensors to the motor controller such that the robot could execute evasive manoeuvres when in proximity of a wall.
 The fuzzy logic is implemented in such a way as to drive the error between the heading and reference angles to zero (as in task one) when outwith the proximity of a wall however, different evasion commands would be executed as required when near a wall.
 
 \subsubsection{Fuzzy Sets}
 %INPUTS
 The angle at which the robot approaches an obstacle ($\Theta_{wall}$) is an input to the motor controller and is calculated in the main code using the following equation:
-$\Theta = arctan\bigg(\frac{d_{left}-d_{right}}{\Delta x}\bigg)$,
+$\Theta_{wall} = arctan\bigg(\frac{d_{left}-d_{right}}{\Delta x}\bigg)$,
 where $d_{left}$, $d_{right}$ and $\Delta x$ are the left sensor distance, right sensor distance and distance between the sensors respectively.
-As the maximum output from a sensor is 1 and the distance between the sensors is 0.2, the maximum detectable wall angle/slope is 1.3734 and therefore the range of the fuzzy input set is $\pm$1.3734.
-The derived set is as follows, \{-ve\textsubscript{hard}, -ve\textsubscript{soft}, FLAT, +ve\textsubscript{soft}, +ve\textsubscript{hard}\}, where each member represents a slope gradient.
+As the maximum output from a sensor is 1 and the distance between the sensors is 0.2, the maximum detectable wall angle/slope is 1.3734. 
+The range of the fuzzy input set is therefore $\pm$1.3734.
 
 \medskip
+The derived set is as follows, \{-ve\textsubscript{hard}, -ve\textsubscript{soft}, FLAT, +ve\textsubscript{soft}, +ve\textsubscript{hard}\}, where each member represents a slope gradient.
 For example, -ve\textsubscript{hard} refers to a steep negative gradient relative to the direction that the robot is facing the wall.
 This set uses trapezoidal membership functions for all but the FLAT member, it was found that the controller performed best when limiting the FLAT member to a small range with a triangular function as otherwise it would become indecisive when approaching the wall at a slight angle in certain scenarios. 
 These can be seen in figure \ref{fig:wallSlope}.
@@ -391,14 +391,15 @@ In this situation, when the turning command is aggressive, the robot will jolt t
 
 \medskip
 To rectify this, it was necessary to provide the controller with an input that could indicate whether or not the robot had cleared a wall while tracking along it. 
-This was achieved by taking a 20 sample moving average (mean) of the wall proximity and providing this as an additional input ($\bar{d}_{wall}$), the robot could be assumed to have cleared a wall only when both the filtered and unfiltered proximity values are one.
+This was achieved by taking a 20 sample moving average (mean) of the wall proximity and providing this as an additional input ($\bar{d}_{wall}$), the robot is assumed to have cleared a wall only when both the filtered and unfiltered proximity values were one.
 The fuzzy set and membership functions are identical to that of the unfiltered proximity seen in figure \ref{fig:wallProx}.
 
 \medskip
 A variable, Finite Impulse Response (FIR) lowpass filter was applied to smooth the output voltages.
-This was achieved by writing and using a sample by sample FIR filter class, this can be seen in appendix ?????????.
-Its cutoff frequency is an output of the motor controller such that the motor responsiveness could be adjusted dynamically in certain scenarios, its set is as follows, \{SLOW, AVG, FAST\}.
-Trapezoidal membership function are used and can be seen in figure \ref{fig:filterOut}, its total range is from 0 to 1 as the filter is normalised to the nyquist frequency. 
+This was achieved by writing and using a sample by sample FIR filter class, this can be seen in appendix B.
+Its cutoff frequency is an output of the motor controller such that the motor responsiveness could be adjusted dynamically in certain scenarios.
+Its set was derived as follows, \{SLOW, AVG, FAST\}.
+Trapezoidal membership functions were used and can be seen in figure \ref{fig:filterOut}, its total range is from 0 to 1 as the filter is normalised to the nyquist frequency. 
 
 %OUTPUTS
 
@@ -411,12 +412,13 @@ Trapezoidal membership function are used and can be seen in figure \ref{fig:filt
 \end{figure}
 
 \subsubsection{Rules}
-When the robot is far from a wall and has cleared it in the situation that it was tracking alongside one, then it applies the same turn command that of task one in table \ref{table:cmdRules}.
-When in proximity of a wall, an appropriate manoeuvre is executed to alter the robot such that it is in parallel with the wall depending on the wall angle relative to the robots heading. 
+When the robot is far from a wall and has cleared it after tracking alongside, it applies the same turn command as that of task one (table \ref{table:cmdRules}).
+When in proximity of a wall however, an appropriate manoeuvre is executed to adjust the robot such that it becomes parallel with the wall depending on the wall angle relative to the robots heading. 
 For example, \textbf{IF} the robot is facing the wall with a steep positive gradient ($\Theta_{wall}$ = +ve\textsubscript{hard}) \textbf{AND} the robot is NEAR to the wall, \textbf{THEN} $A_{left}$ is FWD\textsubscript{hard} \textbf{AND} $A_{right}$ is FWD\textsubscript{soft}.
 In this scenario, the robot is close to parallel to the wall so only a gentle right turn is required.
 In situations where the robot approaches the wall at a flat angle, the robot will turn left or right depending on the current turn command requested by the path controller, if the turn command requested is forward the robot will turn right by default.
 This can be seen in table \ref{table:wallProxRules}. 
+The defuzzification method used was the bisector method.
 
 \begin{comment}
 \begin{table}[H]
@@ -514,10 +516,10 @@ This can be seen in table \ref{table:wallProxRules}.
     \end{table}
 
 %with filtered inputs (wall hugging)
-When tracking along a wall, if the robot is parallel and the waypoint resides an the other side of it, the motor controller will execute a soft turning command towards the wall.
+When tracking along a wall, if the robot is parallel and the waypoint resides on the other side of it, the motor controller will execute a soft turning command towards the wall.
 This prevents the the robot jolting towards the wall when an aggressive turning command is requested by the path controller as described previously.
-The logic is implemented such that these rules are enabled when the unfiltered wall proximity is FAR but the unfiltered proximity is not, i.e. the robot is parallel and therefore still tracking along the wall.
-This can be seen in figure \ref{table:parMotorRules}.
+The logic is implemented such that these rules are enabled when the unfiltered wall proximity is FAR but the filtered proximity is not, i.e. the robot is parallel and therefore still tracking along the wall.
+This can be seen in table \ref{table:parMotorRules}.
 
 \begin{table}[H]
     \centering  
@@ -549,7 +551,7 @@ This can be seen in figure \ref{table:parMotorRules}.
 The following plot (figure \ref{fig:ToWaypoint}) shows the robot's path towards the waypoint specified in the assignment brief (3.5, 2.5).
 The robot was successful in reaching the waypoint within a 0.05m tolerance, finishing at the coordinate (3.5342, 2.5302).
 A subtle avoidance manoeuvre is executed as it reaches the wall at (1.2, -1), the robot tracks alongside the wall until it has cleared it at (1.2, 1) at which it point it turns left towards the waypoint.
-As its position converges on that of the waypoint, a left rotation is executed demonstrating the successful execution of rules to be enabled when very-near to the waypoint. 
+As its position converges on that of the waypoint, a left rotation is executed demonstrating the successful execution of rules that are to be enabled when very-near to the waypoint. 
 \begin{figure}[H]
     \centering
 \includegraphics[scale=\graphScale]{./figures/ToWaypoint.eps}
@@ -620,9 +622,16 @@ Ideally the trajectory as the robot approaches would be smoother and more gradua
 This could be achieved by adding more rules or members to the motor gain output set, increasing the potential resolution of the output voltages.  
 %unused variables (velocity, rotational velocity)
 
+\medskip
+Taking a mean filtered value of wall distance was an effective method of determining whether or not the robot was tracking alongside a wall (in parallel) however, it was not particularly responsive.
+This is because it takes a minimum of a 20 sample delay before the value can settle at one, the equivalent sample rate for the simulation is 20Hz (\lstinline{dT} = 0.05) so it takes an entire second to settle.
+To improve the responsiveness of the system, a different method of determining the lateral proximity to the wall could be used.
+Since this cannot be measured directly, state estimation and/or Kalman filtering could perhaps be used to determine this. 
+\begin{comment}
 \pagebreak
 \bibliographystyle{unsrt}
 \bibliography{refs}
+\end{comment}
 
 \pagebreak
 \appendix
@@ -653,8 +662,9 @@ This could be achieved by adding more rules or members to the motor gain output 
 
 
 
-
+\pagebreak
 \section{Path Controller Rules}
+
 \begin{verbatim}
 '1. If (psi_{ref} is S_{-ve}) and (psi is S_{-ve}) then (TurnCommand is FWD) (1) '
     '2. If (psi_{ref} is S_{-ve}) and (psi is SW) then (TurnCommand is L_{soft}) (1) '

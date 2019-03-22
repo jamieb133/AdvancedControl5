@@ -83,25 +83,23 @@ sensorDelay = zeros(1, fs*2); %simple moving average buffer for wall proximity
 %----------------------------------------------%
 
 %----------------------------------------------%
-ObjectAvoider = readfis('ObjectAvoider.fis');
 HeadingController = readfis('HeadingsToTurnCmd.fis');
 MotorController = readfis('TurnCommand.fis');
-FuzzyController = readfis('FuzzyController.fis');
 
 targetX = 3.5;
 targetY = 2.5
 
 %change these for different scenarios
 
+%{
 xi(19) = 0
 xi(20) = -0;
 %xi(24) = pi/2;
 targetX = -1;
 targetY = -2;
-
+%}
 
 targetWaypoint = [targetX, targetY];
-simpleGain = 10/pi;
 Vd = 2.5; %drive voltage
 motorGain = 15;
 
